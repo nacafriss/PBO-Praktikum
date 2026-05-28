@@ -5,20 +5,20 @@
 package dao;
 
 import java.util.List;
-import model.Lapak;
+import model.Pelanggan;
 
 /**
  *
  * @author rei
  */
-public interface LapakDaoInterface {
+public interface PelangganDaoInterface {
     
-    void insert(Lapak lapak);
+    void insert(Pelanggan pelanggan);
     
-    void update(Lapak lapak);
+    void update(Pelanggan pelanggan);
     
     void delete(int id);
     
-    List<Lapak> getAll();
+    List<Pelanggan> getAll();
     
 }

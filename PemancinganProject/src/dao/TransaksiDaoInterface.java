@@ -4,10 +4,21 @@
  */
 package dao;
 
+import java.util.List;
+import model.Transaksi;
 /**
  *
  * @author rei
  */
 public interface TransaksiDaoInterface {
+    
+    void insert(Transaksi transaksi);
+    
+    void update(Transaksi transaksi);
+    
+    void delete(int id);
+    
+    List<Transaksi> getAll();
+    
     
 }
