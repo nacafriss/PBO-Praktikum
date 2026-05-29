@@ -10,18 +10,16 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 
-/**
- *
- * @author rei
- */
 public class FormatterUtil {
+
+    // Locale Indonesia menggunakan cara baru (Java 19+)
+    private static final Locale LOCALE_ID = Locale.of("id", "ID");
 
     public static String formatRupiah(BigDecimal nominal) {
         if (nominal == null) {
             return "Rp 0";
         }
-        NumberFormat formatRupiah = NumberFormat.getCurrencyInstance(new Locale("id", "ID"));
-        
+        NumberFormat formatRupiah = NumberFormat.getCurrencyInstance(LOCALE_ID);
         return formatRupiah.format(nominal).replace(",00", "");
     }
 
