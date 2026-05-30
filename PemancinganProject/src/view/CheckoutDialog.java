@@ -32,27 +32,27 @@ public class CheckoutDialog extends JDialog {
     private List<Transaksi> aktifList;
     private Transaksi transaksiDipilih;
     private boolean checkoutBerhasil = false;
-    private void batalkanTransaksi() { //PENTING WAKKK
-    // Ambil transaksi urutan pertama (index 0) dari list
-        if (aktifList != null && !aktifList.isEmpty()) {
-            model.Transaksi transaksiYgDibatalkan = aktifList.get(0); // <-- INI KUNCI NYA
-
-            System.out.println("DEBUG: Membatalkan transaksi ID: " + transaksiYgDibatalkan.getId());
-
-            transaksiYgDibatalkan.setStatusTransaksi("DIBATALKAN");
-            transaksiYgDibatalkan.setWaktuCheckout(java.time.LocalDateTime.now());
-
-            dao.TransaksiDao dao = new dao.TransaksiDao();
-            dao.update(transaksiYgDibatalkan);
-
-            System.out.println("DEBUG: Update database SUKSES.");
-            dispose(); // Tutup form
-
-        } else {
-            System.err.println("DEBUG ERROR: aktifList kosong!");
-            dispose();
-        }
-    }
+//    private void batalkanTransaksi() { //PENTING WAKKK
+//    // Ambil transaksi urutan pertama (index 0) dari list
+//        if (aktifList != null && !aktifList.isEmpty()) {
+//            model.Transaksi transaksiYgDibatalkan = aktifList.get(1); // <-- INI KUNCI NYA
+//
+//            System.out.println("DEBUG: Membatalkan transaksi ID: " + transaksiYgDibatalkan.getId());
+//
+//            transaksiYgDibatalkan.setStatusTransaksi("DIBATALKAN");
+//            transaksiYgDibatalkan.setWaktuCheckout(java.time.LocalDateTime.now());
+//
+//            dao.TransaksiDao dao = new dao.TransaksiDao();
+//            dao.update(transaksiYgDibatalkan);
+//
+//            System.out.println("DEBUG: Update database SUKSES.");
+//            dispose(); // Tutup form
+//
+//        } else {
+//            System.err.println("DEBUG ERROR: aktifList kosong!");
+//            dispose();
+//        }
+//    }
     
 
     // Komponen pemilih pelanggan
@@ -447,7 +447,8 @@ public class CheckoutDialog extends JDialog {
         btnBatal.setFont(new Font("Segoe UI", Font.PLAIN, 13));
         btnBatal.setPreferredSize(new Dimension(90, 34));
         btnBatal.setFocusPainted(false);
-        btnBatal.addActionListener(e -> batalkanTransaksi());
+        //btnBatal.addActionListener(e -> batalkanTransaksi());
+        btnBatal.addActionListener(e -> dispose());
 
         btnCheckout = new JButton("✔ Checkout");
         btnCheckout.setFont(new Font("Segoe UI", Font.BOLD, 13));
@@ -666,7 +667,7 @@ public class CheckoutDialog extends JDialog {
         }
 
         String hasil = transaksiController.prosesCheckout(
-                transaksiDipilih, lapak, durasi, listTangkapan);
+                transaksiDipilih, lapak, durasi, listTangkapan, false);
 
         if (hasil.startsWith("Error")) {
             tampilkanError(hasil);
@@ -729,14 +730,32 @@ public class CheckoutDialog extends JDialog {
         );
 
         if (konfirmasi == JOptionPane.YES_OPTION) {
-            // Sinkron status lapak setelah checkout
-            lapakController.sinkronStatusLapak(lapak);
+            
+            // 1. Ambil ulang nilai durasi dan tangkapan dari layar UI
+            String durasi = txtDurasi.getText().trim();
+            List<DetailTangkapan> listTangkapan = new ArrayList<>();
+            
+            if (lapak.getJenisKolam().equals("KILOAN")) {
+                listTangkapan = ambilListTangkapanLengkap();
+            }
+
+            // 2. EKSEKUSI DATABASE SECARA PERMANEN (isSimpanKeDB = true)
+            // Method inilah yang akan mengubah status menjadi SELESAI di MySQL
+            transaksiController.prosesCheckout(transaksiDipilih, lapak, durasi, listTangkapan, true);
+
+            // 3. Refresh layar utama agar pelanggan langsung hilang dari UI
+            if (lapakController != null) {
+                // Gunakan method refresh yang ada di controller-mu (misal: muatData() atau semacamnya)
+                lapakController.sinkronStatusLapak(lapak);
+            }
 
             checkoutBerhasil = true;
             JOptionPane.showMessageDialog(this,
                     "Checkout berhasil!\nTerima kasih, "
                             + transaksiDipilih.getNamaPelanggan(),
                     "Berhasil", JOptionPane.INFORMATION_MESSAGE);
+            
+            // 4. Tutup Jendela
             dispose();
         }
     }

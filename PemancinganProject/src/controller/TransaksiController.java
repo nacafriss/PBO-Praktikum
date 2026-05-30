@@ -41,7 +41,7 @@ public class TransaksiController {
         this.detailTangkapanDao = new DetailTangkapanDao();
     }
 
-    // =========================================================
+// =========================================================
     // CHECKOUT UTAMA
     // =========================================================
 
@@ -53,11 +53,13 @@ public class TransaksiController {
      * @param lapak            Lapak tempat pelanggan
      * @param inputDurasi      Durasi aktual menit (relevan HARIAN)
      * @param listTangkapan    List detail tangkapan ikan (relevan KILOAN)
+     * @param isSimpanKeDB     Jika false hanya untuk preview struk, jika true simpan ke database
      * @return Pesan hasil checkout
      */
     public String prosesCheckout(Transaksi transaksi, Lapak lapak,
                                   String inputDurasi,
-                                  List<DetailTangkapan> listTangkapan) {
+                                  List<DetailTangkapan> listTangkapan,
+                                  boolean isSimpanKeDB) { // <-- Tambahan parameter di sini
 
         // --- Validasi Input ---
         if (!ValidatorUtil.isNumeric(inputDurasi)) {
@@ -127,38 +129,45 @@ public class TransaksiController {
             totalBiaya = BigDecimal.ZERO;
         }
 
-        // --- Update State Transaksi ---
+        // --- Update State Transaksi (Di Memori untuk Struk) ---
         transaksi.setDurasiAktualMenit(durasiAktual);
         transaksi.setSubtotalIkan(subtotalIkan);
         transaksi.setBiayaSewa(biayaSewa);
         transaksi.setDiskon(diskon);
         transaksi.setTotalTagihan(totalBiaya);
-        transaksi.setWaktuCheckout(LocalDateTime.now());
-        transaksi.setStatusTransaksi("SELESAI");
 
-        // --- Simpan ke DB ---
-        transaksiDao.update(transaksi);
+        // =========================================================
+        // BAGIAN DATABASE DIBUNGKUS IF (Hanya Jalan Saat Tombol Checkout Asli Diklik)
+        // =========================================================
+        if (isSimpanKeDB) {
+            transaksi.setWaktuCheckout(LocalDateTime.now());
+            transaksi.setStatusTransaksi("SELESAI");
 
-        // Simpan detail tangkapan jika ada
-        if (listTangkapan != null && !listTangkapan.isEmpty()) {
-            for (DetailTangkapan detail : listTangkapan) {
-                detail.setTransaksiId(transaksi.getId());
+            // --- Simpan ke DB ---
+            transaksiDao.update(transaksi);
+
+            // Simpan detail tangkapan jika ada
+            if (listTangkapan != null && !listTangkapan.isEmpty()) {
+                for (DetailTangkapan detail : listTangkapan) {
+                    detail.setTransaksiId(transaksi.getId());
+                }
+                detailTangkapanDao.insertBatch(listTangkapan);
             }
-            detailTangkapanDao.insertBatch(listTangkapan);
-        }
 
-        // --- Update Total Belanja Pelanggan ---
-        if (transaksi.getPelangganId() != null) {
-            updateTotalBelanjaPelanggan(transaksi.getPelangganId(), totalBiaya);
-        }
+            // --- Update Total Belanja Pelanggan ---
+            if (transaksi.getPelangganId() != null) {
+                updateTotalBelanjaPelanggan(transaksi.getPelangganId(), totalBiaya);
+            }
 
-        // --- Sinkron Status Lapak ---
-        // Lapak jadi KOSONG hanya jika tidak ada transaksi aktif lain
-        List<Transaksi> sisaAktif = transaksiDao.getAktifByLapakId(lapak.getId());
-        if (sisaAktif.isEmpty()) {
-            lapak.setStatus("KOSONG");
-            lapakDao.update(lapak);
+            // --- Sinkron Status Lapak ---
+            // Lapak jadi KOSONG hanya jika tidak ada transaksi aktif lain
+            List<Transaksi> sisaAktif = transaksiDao.getAktifByLapakId(lapak.getId());
+            if (sisaAktif.isEmpty()) {
+                lapak.setStatus("KOSONG");
+                lapakDao.update(lapak);
+            }
         }
+        // =========================================================
 
         // --- Return Struk ---
         return buildStruk(transaksi, lapak, listTangkapan,
@@ -175,8 +184,8 @@ public class TransaksiController {
      * Tetap dipertahankan agar tidak breaking change.
      */
     public String prosesCheckout(Transaksi transaksi, Lapak lapak,
-                                  String inputDurasi, String inputBeratIkan) {
-
+                                  String inputDurasi, String inputBeratIkan, 
+                                  boolean isSimpanKeDB) { 
         // Validasi
         if (!ValidatorUtil.isNumeric(inputDurasi)) {
             return "Error: Durasi harus berupa angka bulat!";
@@ -205,7 +214,7 @@ public class TransaksiController {
             }
         }
 
-        return prosesCheckout(transaksi, lapak, inputDurasi, listTangkapan);
+        return prosesCheckout(transaksi, lapak, inputDurasi, listTangkapan, isSimpanKeDB); 
     }
 
     // =========================================================

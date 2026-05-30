@@ -71,7 +71,7 @@ public class RiwayatTransaksiPanel extends JPanel {
         tableModel.setRowCount(0); // Bersihkan isi tabel lama
         
         TransaksiDao dao = new TransaksiDao();
-        List<Transaksi> list = dao.getAll(); // Pastikan kamu sudah menambahkan method getAll() di TransaksiDao sebelumnya
+        List<Transaksi> list = dao.getAll();
 
         for (Transaksi t : list) {
             Object[] baris = {
