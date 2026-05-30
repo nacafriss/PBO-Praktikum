@@ -62,7 +62,7 @@ public class DashboardView extends JFrame {
         logoPanel.setPreferredSize(new Dimension(200, 70));
         logoPanel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
 
-        JLabel logoLabel = new JLabel("<html><center>🎣<br>Pemancingan</center></html>");
+        JLabel logoLabel = new JLabel("<html><center><br>Pemancingan</center></html>");
         logoLabel.setFont(new Font("Segoe UI", Font.BOLD, 15));
         logoLabel.setForeground(Color.WHITE);
         logoLabel.setHorizontalAlignment(SwingConstants.CENTER);
@@ -72,16 +72,16 @@ public class DashboardView extends JFrame {
         sidebarPanel.add(Box.createVerticalStrut(10));
 
         // Menu Items
-        sidebarPanel.add(buatMenuButton("🏠  Monitor Lapak",   "LAPAK"));
-        sidebarPanel.add(buatMenuButton("👥  Pelanggan",        "PELANGGAN"));
-        sidebarPanel.add(buatMenuButton("📋  Riwayat Transaksi","TRANSAKSI"));
-        sidebarPanel.add(buatMenuButton("📊  Laporan",          "LAPORAN"));
+        sidebarPanel.add(buatMenuButton("Monitor Lapak",   "LAPAK"));
+        sidebarPanel.add(buatMenuButton("Pelanggan",        "PELANGGAN"));
+        sidebarPanel.add(buatMenuButton("Riwayat Transaksi","TRANSAKSI"));
+        sidebarPanel.add(buatMenuButton("Laporan",          "LAPORAN"));
 
         // Spacer dorong tombol keluar ke bawah
         sidebarPanel.add(Box.createVerticalGlue());
 
         // Tombol Keluar di bagian bawah sidebar
-        JButton keluarBtn = buatMenuButton("🚪  Keluar", "KELUAR");
+        JButton keluarBtn = buatMenuButton("Keluar", "KELUAR");
         keluarBtn.setBackground(new Color(169, 50, 38));
         sidebarPanel.add(keluarBtn);
         sidebarPanel.add(Box.createVerticalStrut(10));
@@ -157,13 +157,13 @@ public class DashboardView extends JFrame {
         contentPanel.add(lapakPanel, "LAPAK");
 
         // Panel Pelanggan (placeholder)
-        contentPanel.add(buatPlaceholder("👥 Manajemen Pelanggan\n(Segera Hadir)"), "PELANGGAN");
+        contentPanel.add(buatPlaceholder("Manajemen Pelanggan\n(Segera Hadir)"), "PELANGGAN");
 
         // Panel Transaksi (placeholder)
-        contentPanel.add(buatPlaceholder("📋 Riwayat Transaksi\n(Segera Hadir)"), "TRANSAKSI");
+        contentPanel.add(buatPlaceholder("Riwayat Transaksi\n(Segera Hadir)"), "TRANSAKSI");
 
         // Panel Laporan (placeholder)
-        contentPanel.add(buatPlaceholder("📊 Laporan & Statistik\n(Segera Hadir)"), "LAPORAN");
+        contentPanel.add(buatPlaceholder("Laporan & Statistik\n(Segera Hadir)"), "LAPORAN");
 
         add(contentPanel, BorderLayout.CENTER);
     }

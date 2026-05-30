@@ -4,10 +4,6 @@
  */
 package view;
 
-/**
- *
- * @author rei
- */
 import controller.LapakController;
 import model.Lapak;
 import model.Pelanggan;
@@ -16,6 +12,7 @@ import utils.ValidatorUtil;
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
 import java.awt.*;
+import java.util.List;
 
 public class CheckinDialog extends JDialog {
 
@@ -26,26 +23,31 @@ public class CheckinDialog extends JDialog {
     // Komponen form
     private JTextField txtNama;
     private JTextField txtNoHp;
+    private JTextField txtEmail;
+    private JTextField txtAlamat;
     private JTextField txtDurasi;
     private JComboBox<String> cmbMetodeBayar;
+    private JComboBox<Integer> cmbPosisi;
     private JLabel lblInfoMember;
     private JLabel lblInfoLapak;
+    private JLabel lblPosisiInfo;
     private JButton btnCheckin;
     private JButton btnBatal;
 
-    private static final Color BIRU_TUA  = new Color(26, 82, 118);
-    private static final Color HIJAU     = new Color(39, 174, 96);
-    private static final Color MERAH     = new Color(192, 57, 43);
-    private static final Color BG_PANEL  = new Color(245, 248, 250);
+    private static final Color BIRU_TUA = new Color(26, 82, 118);
+    private static final Color HIJAU    = new Color(39, 174, 96);
+    private static final Color MERAH    = new Color(192, 57, 43);
+    private static final Color BG_PANEL = new Color(245, 248, 250);
 
     public CheckinDialog(Frame parent, Lapak lapak, LapakController lapakController) {
-        super(parent, "Check-in Pelanggan", true); // modal
+        super(parent, "Check-in Pelanggan", true);
         this.lapak = lapak;
         this.lapakController = lapakController;
 
         initUI();
+        muatPosisiTersedia();
         pack();
-        setMinimumSize(new Dimension(420, 480));
+        setMinimumSize(new Dimension(460, 600));
         setLocationRelativeTo(parent);
         setResizable(false);
     }
@@ -72,7 +74,8 @@ public class CheckinDialog extends JDialog {
         titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 16));
         titleLabel.setForeground(Color.WHITE);
 
-        lblInfoLapak = new JLabel(lapak.getJenisKolam() + "  •  Kapasitas: " + lapak.getKapasitas());
+        lblInfoLapak = new JLabel(lapak.getJenisKolam()
+                + "  •  Kapasitas: " + lapak.getKapasitas());
         lblInfoLapak.setFont(new Font("Segoe UI", Font.PLAIN, 12));
         lblInfoLapak.setForeground(new Color(174, 214, 241));
 
@@ -86,26 +89,31 @@ public class CheckinDialog extends JDialog {
         JPanel panel = new JPanel();
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
         panel.setBackground(BG_PANEL);
-        panel.setBorder(BorderFactory.createEmptyBorder(16, 20, 8, 20));
+        panel.setBorder(BorderFactory.createEmptyBorder(14, 20, 8, 20));
 
-        // --- Bagian Data Pelanggan ---
-        TitledBorder borderPelanggan = BorderFactory.createTitledBorder(
-                BorderFactory.createLineBorder(new Color(200, 200, 200)),
-                "Data Pelanggan"
-        );
-        borderPelanggan.setTitleFont(new Font("Segoe UI", Font.BOLD, 12));
+        panel.add(buatSectionPelanggan());
+        panel.add(Box.createVerticalStrut(12));
+        panel.add(buatSectionSesi());
 
-        JPanel sectionPelanggan = new JPanel();
-        sectionPelanggan.setLayout(new BoxLayout(sectionPelanggan, BoxLayout.Y_AXIS));
-        sectionPelanggan.setBackground(BG_PANEL);
-        sectionPelanggan.setBorder(borderPelanggan);
+        return panel;
+    }
+
+    // =========================================================
+    // SECTION DATA PELANGGAN
+    // =========================================================
+
+    private JPanel buatSectionPelanggan() {
+        JPanel section = new JPanel();
+        section.setLayout(new BoxLayout(section, BoxLayout.Y_AXIS));
+        section.setBackground(BG_PANEL);
+        section.setBorder(buatTitledBorder("Data Pelanggan"));
 
         // Nama
         txtNama = new JTextField();
-        sectionPelanggan.add(buatFieldRow("Nama Pelanggan *", txtNama));
-        sectionPelanggan.add(Box.createVerticalStrut(8));
+        section.add(buatFieldRow("Nama Pelanggan *", txtNama));
+        section.add(Box.createVerticalStrut(6));
 
-        // No HP + auto lookup member
+        // No HP — auto lookup member saat fokus hilang
         txtNoHp = new JTextField();
         txtNoHp.addFocusListener(new java.awt.event.FocusAdapter() {
             @Override
@@ -113,52 +121,78 @@ public class CheckinDialog extends JDialog {
                 cekMember();
             }
         });
-        sectionPelanggan.add(buatFieldRow("No. HP", txtNoHp));
-        sectionPelanggan.add(Box.createVerticalStrut(6));
+        section.add(buatFieldRow("No. HP", txtNoHp));
+        section.add(Box.createVerticalStrut(4));
 
-        // Info member (muncul jika HP terdaftar)
+        // Info member
         lblInfoMember = new JLabel(" ");
         lblInfoMember.setFont(new Font("Segoe UI", Font.ITALIC, 11));
         lblInfoMember.setForeground(HIJAU);
-        lblInfoMember.setBorder(BorderFactory.createEmptyBorder(0, 4, 0, 0));
-        sectionPelanggan.add(lblInfoMember);
+        lblInfoMember.setBorder(BorderFactory.createEmptyBorder(0, 8, 0, 0));
+        section.add(lblInfoMember);
+        section.add(Box.createVerticalStrut(6));
 
-        panel.add(sectionPelanggan);
-        panel.add(Box.createVerticalStrut(12));
+        // Email
+        txtEmail = new JTextField();
+        section.add(buatFieldRow("Email", txtEmail));
+        section.add(Box.createVerticalStrut(6));
 
-        // --- Bagian Detail Sesi ---
-        TitledBorder borderSesi = BorderFactory.createTitledBorder(
-                BorderFactory.createLineBorder(new Color(200, 200, 200)),
-                "Detail Sesi"
-        );
-        borderSesi.setTitleFont(new Font("Segoe UI", Font.BOLD, 12));
+        // Alamat
+        txtAlamat = new JTextField();
+        section.add(buatFieldRow("Alamat", txtAlamat));
 
-        JPanel sectionSesi = new JPanel();
-        sectionSesi.setLayout(new BoxLayout(sectionSesi, BoxLayout.Y_AXIS));
-        sectionSesi.setBackground(BG_PANEL);
-        sectionSesi.setBorder(borderSesi);
+        return section;
+    }
+
+    // =========================================================
+    // SECTION DETAIL SESI
+    // =========================================================
+
+    private JPanel buatSectionSesi() {
+        JPanel section = new JPanel();
+        section.setLayout(new BoxLayout(section, BoxLayout.Y_AXIS));
+        section.setBackground(BG_PANEL);
+        section.setBorder(buatTitledBorder("Detail Sesi"));
+
+        // Pilih posisi
+        cmbPosisi = new JComboBox<>();
+        cmbPosisi.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        section.add(buatFieldRow("Posisi *", cmbPosisi));
+        section.add(Box.createVerticalStrut(4));
+
+        // Info posisi tersedia
+        lblPosisiInfo = new JLabel(" ");
+        lblPosisiInfo.setFont(new Font("Segoe UI", Font.ITALIC, 11));
+        lblPosisiInfo.setForeground(new Color(100, 100, 100));
+        lblPosisiInfo.setBorder(BorderFactory.createEmptyBorder(0, 8, 0, 0));
+        section.add(lblPosisiInfo);
+        section.add(Box.createVerticalStrut(6));
 
         // Durasi pesan
         txtDurasi = new JTextField("0");
         String labelDurasi = lapak.getJenisKolam().equals("HARIAN")
-                ? "Durasi Pesan (menit)" : "Durasi Pesan (menit, opsional)";
-        sectionSesi.add(buatFieldRow(labelDurasi, txtDurasi));
-        sectionSesi.add(Box.createVerticalStrut(8));
+                ? "Durasi Pesan (menit) *" : "Durasi Pesan (menit, opsional)";
+        section.add(buatFieldRow(labelDurasi, txtDurasi));
+        section.add(Box.createVerticalStrut(6));
 
         // Metode bayar
-        cmbMetodeBayar = new JComboBox<>(new String[]{"TUNAI", "TRANSFER", "QRIS", "MEMBER_POIN"});
+        cmbMetodeBayar = new JComboBox<>(
+                new String[]{"TUNAI", "TRANSFER", "QRIS", "MEMBER_POIN"});
         cmbMetodeBayar.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-        sectionSesi.add(buatFieldRow("Metode Bayar", cmbMetodeBayar));
+        section.add(buatFieldRow("Metode Bayar", cmbMetodeBayar));
 
-        panel.add(sectionSesi);
-
-        return panel;
+        return section;
     }
+
+    // =========================================================
+    // TOMBOL PANEL
+    // =========================================================
 
     private JPanel buatTombolPanel() {
         JPanel panel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 12, 12));
         panel.setBackground(BG_PANEL);
-        panel.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, new Color(220, 220, 220)));
+        panel.setBorder(BorderFactory.createMatteBorder(
+                1, 0, 0, 0, new Color(220, 220, 220)));
 
         btnBatal = new JButton("Batal");
         btnBatal.setFont(new Font("Segoe UI", Font.PLAIN, 13));
@@ -166,7 +200,7 @@ public class CheckinDialog extends JDialog {
         btnBatal.setFocusPainted(false);
         btnBatal.addActionListener(e -> dispose());
 
-        btnCheckin = new JButton("✔ Check-in");
+        btnCheckin = new JButton("Check-in");
         btnCheckin.setFont(new Font("Segoe UI", Font.BOLD, 13));
         btnCheckin.setBackground(HIJAU);
         btnCheckin.setForeground(Color.WHITE);
@@ -183,7 +217,7 @@ public class CheckinDialog extends JDialog {
     }
 
     // =========================================================
-    // HELPER BUAT BARIS FORM
+    // HELPER UI
     // =========================================================
 
     private JPanel buatFieldRow(String labelTeks, JComponent field) {
@@ -206,12 +240,48 @@ public class CheckinDialog extends JDialog {
         return row;
     }
 
+    private TitledBorder buatTitledBorder(String judul) {
+        TitledBorder border = BorderFactory.createTitledBorder(
+                BorderFactory.createLineBorder(new Color(200, 200, 200)), judul);
+        border.setTitleFont(new Font("Segoe UI", Font.BOLD, 12));
+        return border;
+    }
+
     // =========================================================
     // LOGIKA
     // =========================================================
 
     /**
-     * Auto lookup member berdasarkan no HP saat field HP kehilangan fokus.
+     * Muat posisi yang masih tersedia ke ComboBox.
+     */
+    private void muatPosisiTersedia() {
+        cmbPosisi.removeAllItems();
+
+        List<Integer> terpakai = lapakController.getPosisiTerpakai(lapak.getId());
+        int tersedia = 0;
+
+        for (int i = 1; i <= lapak.getKapasitas(); i++) {
+            if (!terpakai.contains(i)) {
+                cmbPosisi.addItem(i);
+                tersedia++;
+            }
+        }
+
+        // Tampilkan info posisi
+        if (tersedia == 0) {
+            lblPosisiInfo.setText("Semua posisi penuh!");
+            lblPosisiInfo.setForeground(MERAH);
+            btnCheckin.setEnabled(false);
+        } else {
+            lblPosisiInfo.setText(tersedia + " posisi tersedia dari "
+                    + lapak.getKapasitas());
+            lblPosisiInfo.setForeground(new Color(100, 100, 100));
+            btnCheckin.setEnabled(true);
+        }
+    }
+
+    /**
+     * Auto lookup member berdasarkan no HP.
      */
     private void cekMember() {
         String noHp = txtNoHp.getText().trim();
@@ -222,30 +292,45 @@ public class CheckinDialog extends JDialog {
 
         Pelanggan pelanggan = lapakController.cariPelangganByNoHp(noHp);
         if (pelanggan != null) {
-            // Auto-fill nama jika field nama masih kosong
+            // Auto-fill data pelanggan
             if (txtNama.getText().trim().isEmpty()) {
                 txtNama.setText(pelanggan.getNama());
             }
-            lblInfoMember.setText("✔ Member ditemukan: " + pelanggan.getNama()
-                    + " [" + pelanggan.getTipeMember() + "]"
-                    + "  Poin: " + pelanggan.getPoin());
+            if (txtEmail.getText().trim().isEmpty() && pelanggan.getEmail() != null) {
+                txtEmail.setText(pelanggan.getEmail());
+            }
+            if (txtAlamat.getText().trim().isEmpty() && pelanggan.getAlamat() != null) {
+                txtAlamat.setText(pelanggan.getAlamat());
+            }
+
+            lblInfoMember.setText(pelanggan.getNama()
+                    + "  [" + pelanggan.getTipeMember() + "]"
+                    + "  Poin: " + pelanggan.getPoin()
+                    + "  Kunjungan: " + pelanggan.getTotalKunjungan());
             lblInfoMember.setForeground(HIJAU);
         } else {
-            lblInfoMember.setText("Bukan member terdaftar.");
+            lblInfoMember.setText("Pelanggan baru — akan didaftarkan otomatis.");
             lblInfoMember.setForeground(new Color(150, 150, 150));
         }
     }
 
     private void prosesCheckin() {
-        String nama      = txtNama.getText().trim();
-        String noHp      = txtNoHp.getText().trim();
-        String durasi    = txtDurasi.getText().trim();
-        String metode    = (String) cmbMetodeBayar.getSelectedItem();
+        String nama    = txtNama.getText().trim();
+        String noHp    = txtNoHp.getText().trim();
+        String durasi  = txtDurasi.getText().trim();
+        String metode  = (String) cmbMetodeBayar.getSelectedItem();
 
-        // Validasi nama wajib diisi
+        // Validasi nama
         if (!ValidatorUtil.isNotNullOrEmpty(nama)) {
             tampilkanError("Nama pelanggan tidak boleh kosong!");
             txtNama.requestFocus();
+            return;
+        }
+
+        // Validasi no HP jika diisi
+        if (ValidatorUtil.isNotNullOrEmpty(noHp) && !ValidatorUtil.isNomorHpValid(noHp)) {
+            tampilkanError("Format nomor HP tidak valid!");
+            txtNoHp.requestFocus();
             return;
         }
 
@@ -256,20 +341,31 @@ public class CheckinDialog extends JDialog {
             return;
         }
 
+        // Validasi posisi
+        if (cmbPosisi.getItemCount() == 0 || cmbPosisi.getSelectedItem() == null) {
+            tampilkanError("Tidak ada posisi tersedia!");
+            return;
+        }
+
+        int posisi = (Integer) cmbPosisi.getSelectedItem();
+
         // Kirim ke controller
-        String hasil = lapakController.prosesCheckin(lapak, nama, noHp, durasi, metode, "kasir");
+        String hasil = lapakController.prosesCheckin(
+                lapak, nama, noHp, durasi, metode, posisi, "admin");
 
         if (hasil.startsWith("Error")) {
             tampilkanError(hasil);
         } else {
-            JOptionPane.showMessageDialog(this, hasil, "Berhasil", JOptionPane.INFORMATION_MESSAGE);
+            JOptionPane.showMessageDialog(this, hasil,
+                    "Check-in Berhasil", JOptionPane.INFORMATION_MESSAGE);
             checkinBerhasil = true;
             dispose();
         }
     }
 
     private void tampilkanError(String pesan) {
-        JOptionPane.showMessageDialog(this, pesan, "Validasi Gagal", JOptionPane.ERROR_MESSAGE);
+        JOptionPane.showMessageDialog(this, pesan,
+                "Validasi Gagal", JOptionPane.ERROR_MESSAGE);
     }
 
     // =========================================================

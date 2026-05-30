@@ -18,6 +18,7 @@ public class Transaksi {
     private String jenisKolam; // 'HARIAN', 'KILOAN', 'GALATAMA'
     private String namaPelanggan; // Snapshot nama pelanggan
     private String noHpPelanggan; // Snapshot no hp pelanggan
+    private Integer posisi;
     private LocalDateTime waktuCheckin;
     private LocalDateTime waktuCheckout; // Bisa NULL
     private Integer durasiAktualMenit; // Bisa NULL
@@ -36,7 +37,7 @@ public class Transaksi {
     }
 
     public Transaksi(int id, int lapakId, Integer pelangganId, String jenisKolam, String namaPelanggan, 
-                     String noHpPelanggan, LocalDateTime waktuCheckin, LocalDateTime waktuCheckout, 
+                     String noHpPelanggan, Integer posisi, LocalDateTime waktuCheckin, LocalDateTime waktuCheckout, 
                      Integer durasiAktualMenit, Integer durasiPesanMenit, BigDecimal subtotalIkan, 
                      BigDecimal biayaSewa, BigDecimal diskon, int poinDigunakan, BigDecimal totalTagihan, 
                      String metodeBayar, String statusTransaksi, String catatan, String createdBy) {
@@ -46,6 +47,7 @@ public class Transaksi {
         this.jenisKolam = jenisKolam;
         this.namaPelanggan = namaPelanggan;
         this.noHpPelanggan = noHpPelanggan;
+        this.posisi = posisi;
         this.waktuCheckin = waktuCheckin;
         this.waktuCheckout = waktuCheckout;
         this.durasiAktualMenit = durasiAktualMenit;
@@ -78,6 +80,9 @@ public class Transaksi {
 
     public String getNoHpPelanggan() { return noHpPelanggan; }
     public void setNoHpPelanggan(String noHpPelanggan) { this.noHpPelanggan = noHpPelanggan; }
+    
+    public Integer getPosisi() { return posisi; }
+    public void setPosisi(Integer posisi) { this.posisi = posisi; }
 
     public LocalDateTime getWaktuCheckin() { return waktuCheckin; }
     public void setWaktuCheckin(LocalDateTime waktuCheckin) { this.waktuCheckin = waktuCheckin; }

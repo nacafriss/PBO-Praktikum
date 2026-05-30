@@ -4,10 +4,6 @@
  */
 package view;
 
-/**
- *
- * @author rei
- */
 import controller.LapakController;
 import controller.TransaksiController;
 import model.Lapak;
@@ -16,7 +12,11 @@ import thread.LapakTimerThread;
 import utils.FormatterUtil;
 
 import javax.swing.*;
+import javax.swing.table.DefaultTableCellRenderer;
+import javax.swing.table.DefaultTableModel;
 import java.awt.*;
+import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -26,27 +26,45 @@ public class LapakPanel extends JPanel implements LapakTimerThread.LapakTimerLis
     private LapakController lapakController;
     private TransaksiController transaksiController;
 
-    // Map untuk menyimpan timer per lapak (key: lapakId)
+    // Timer per transaksi (key: transaksiId)
     private Map<Integer, LapakTimerThread> timerMap;
 
-    // Map untuk menyimpan panel kartu per lapak (key: lapakId)
+    // Panel kartu per lapak (key: lapakId)
     private Map<Integer, JPanel> kartuMap;
 
-    // Map untuk menyimpan label timer per lapak (key: lapakId)
-    private Map<Integer, JLabel> timerLabelMap;
+    // Komponen tab
+    private JPanel tabKartu;
+    private JPanel tabAktif;
+    private JButton btnTabKartu;
+    private JButton btnTabAktif;
 
-    // Panel utama yang menampung semua kartu lapak
+    // Tabel pelanggan aktif
+    private JTable tabelAktif;
+    private DefaultTableModel modelTabelAktif;
+
+    // Grid kartu lapak
     private JPanel gridPanel;
 
+    // Summary metrics
+    private JLabel lblTotalAktif;
+    private JLabel lblLapakTerisi;
+    private JLabel lblOvertime;
+    private JLabel lblPosisiKosong;
+
+    private static final Color BIRU_TUA   = new Color(26, 82, 118);
+    private static final Color BG_CONTENT = new Color(240, 244, 248);
+    private static final Color HIJAU      = new Color(39, 174, 96);
+    private static final Color ORANYE     = new Color(230, 126, 34);
+    private static final Color MERAH      = new Color(192, 57, 43);
+
     public LapakPanel() {
-        this.lapakController = new LapakController();
+        this.lapakController    = new LapakController();
         this.transaksiController = new TransaksiController();
-        this.timerMap = new HashMap<>();
-        this.kartuMap = new HashMap<>();
-        this.timerLabelMap = new HashMap<>();
+        this.timerMap  = new HashMap<>();
+        this.kartuMap  = new HashMap<>();
 
         initUI();
-        muatSemuaLapak();
+        muatSemuaData();
     }
 
     // =========================================================
@@ -55,81 +73,244 @@ public class LapakPanel extends JPanel implements LapakTimerThread.LapakTimerLis
 
     private void initUI() {
         setLayout(new BorderLayout());
-        setBackground(new Color(240, 244, 248));
+        setBackground(BG_CONTENT);
 
-        // Header
-        JPanel headerPanel = buatHeaderPanel();
-        add(headerPanel, BorderLayout.NORTH);
+        add(buatHeaderPanel(), BorderLayout.NORTH);
 
-        // Grid lapak (scrollable)
-        gridPanel = new JPanel(new GridLayout(0, 3, 15, 15));
-        gridPanel.setBackground(new Color(240, 244, 248));
-        gridPanel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
+        // Container dua tab
+        JPanel container = new JPanel(new CardLayout());
+        container.setBackground(BG_CONTENT);
 
-        JScrollPane scrollPane = new JScrollPane(gridPanel);
-        scrollPane.setBorder(null);
-        scrollPane.getVerticalScrollBar().setUnitIncrement(16);
-        add(scrollPane, BorderLayout.CENTER);
+        tabKartu = buatTabKartu();
+        tabAktif = buatTabAktif();
+
+        container.add(tabKartu, "KARTU");
+        container.add(tabAktif, "AKTIF");
+
+        add(container, BorderLayout.CENTER);
     }
 
     private JPanel buatHeaderPanel() {
         JPanel panel = new JPanel(new BorderLayout());
-        panel.setBackground(new Color(26, 82, 118));
-        panel.setBorder(BorderFactory.createEmptyBorder(12, 20, 12, 20));
+        panel.setBackground(BIRU_TUA);
+        panel.setBorder(BorderFactory.createEmptyBorder(10, 16, 0, 16));
 
-        JLabel titleLabel = new JLabel("Monitor Lapak");
-        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 20));
-        titleLabel.setForeground(Color.WHITE);
+        // Judul
+        JLabel title = new JLabel("Monitor Lapak");
+        title.setFont(new Font("Segoe UI", Font.BOLD, 18));
+        title.setForeground(Color.WHITE);
 
-        JButton refreshButton = new JButton("↺ Refresh");
-        refreshButton.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-        refreshButton.setBackground(new Color(52, 152, 219));
-        refreshButton.setForeground(Color.WHITE);
-        refreshButton.setFocusPainted(false);
-        refreshButton.setBorderPainted(false);
-        refreshButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        refreshButton.addActionListener(e -> refresh());
+        // Tab buttons
+        JPanel tabPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        tabPanel.setOpaque(false);
 
-        panel.add(titleLabel, BorderLayout.WEST);
-        panel.add(refreshButton, BorderLayout.EAST);
+        btnTabKartu = buatTabButton("Kartu Lapak", true);
+        btnTabAktif = buatTabButton("Pelanggan Aktif", false);
+
+        btnTabKartu.addActionListener(e -> pindahTab("KARTU"));
+        btnTabAktif.addActionListener(e -> pindahTab("AKTIF"));
+
+        tabPanel.add(btnTabKartu);
+        tabPanel.add(btnTabAktif);
+
+        // Refresh
+        JButton btnRefresh = new JButton("Refresh");
+        btnRefresh.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        btnRefresh.setBackground(new Color(52, 152, 219));
+        btnRefresh.setForeground(Color.WHITE);
+        btnRefresh.setFocusPainted(false);
+        btnRefresh.setBorderPainted(false);
+        btnRefresh.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btnRefresh.addActionListener(e -> refresh());
+
+        JPanel kanan = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 8));
+        kanan.setOpaque(false);
+        kanan.add(btnRefresh);
+
+        panel.add(title, BorderLayout.WEST);
+        panel.add(tabPanel, BorderLayout.SOUTH);
+        panel.add(kanan, BorderLayout.EAST);
+
+        return panel;
+    }
+
+    private JButton buatTabButton(String teks, boolean aktif) {
+        JButton btn = new JButton(teks);
+        btn.setFont(new Font("Segoe UI", aktif ? Font.BOLD : Font.PLAIN, 13));
+        btn.setForeground(aktif ? Color.WHITE : new Color(174, 214, 241));
+        btn.setBackground(BIRU_TUA);
+        btn.setFocusPainted(false);
+        btn.setBorderPainted(false);
+        btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btn.setBorder(BorderFactory.createEmptyBorder(8, 16, 0, 16));
+
+        // Garis bawah sebagai indikator tab aktif
+        if (aktif) {
+            btn.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createMatteBorder(0, 0, 3, 0, Color.WHITE),
+                    BorderFactory.createEmptyBorder(8, 16, 0, 16)
+            ));
+        }
+
+        return btn;
+    }
+
+    // =========================================================
+    // TAB KARTU LAPAK
+    // =========================================================
+
+    private JPanel buatTabKartu() {
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBackground(BG_CONTENT);
+
+        gridPanel = new JPanel(new GridLayout(0, 3, 12, 12));
+        gridPanel.setBackground(BG_CONTENT);
+        gridPanel.setBorder(BorderFactory.createEmptyBorder(14, 14, 14, 14));
+
+        JScrollPane scroll = new JScrollPane(gridPanel);
+        scroll.setBorder(null);
+        scroll.getVerticalScrollBar().setUnitIncrement(16);
+        panel.add(scroll, BorderLayout.CENTER);
 
         return panel;
     }
 
     // =========================================================
-    // LOAD DATA LAPAK
+    // TAB PELANGGAN AKTIF
     // =========================================================
 
-    private void muatSemuaLapak() {
+    private JPanel buatTabAktif() {
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBackground(BG_CONTENT);
+        panel.setBorder(BorderFactory.createEmptyBorder(14, 14, 14, 14));
+
+        // Summary metrics
+        panel.add(buatSummaryPanel(), BorderLayout.NORTH);
+
+        // Tabel
+        String[] kolom = {"Pelanggan", "No. HP", "Lapak", "Jenis", "Posisi",
+                           "Check-in", "Durasi", "Status", "Aksi"};
+        modelTabelAktif = new DefaultTableModel(kolom, 0) {
+            @Override
+            public boolean isCellEditable(int row, int col) {
+                return col == 8; // Hanya kolom Aksi yang bisa diklik
+            }
+        };
+
+        tabelAktif = new JTable(modelTabelAktif);
+        tabelAktif.setRowHeight(36);
+        tabelAktif.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        tabelAktif.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 12));
+        tabelAktif.getTableHeader().setBackground(new Color(235, 241, 245));
+        tabelAktif.getTableHeader().setForeground(new Color(80, 80, 80));
+        tabelAktif.setShowVerticalLines(false);
+        tabelAktif.setGridColor(new Color(230, 230, 230));
+        tabelAktif.setSelectionBackground(new Color(235, 245, 255));
+        tabelAktif.setIntercellSpacing(new Dimension(0, 1));
+
+        // Atur lebar kolom
+        int[] lebarKolom = {140, 110, 90, 80, 55, 80, 90, 75, 85};
+        for (int i = 0; i < lebarKolom.length; i++) {
+            tabelAktif.getColumnModel().getColumn(i).setPreferredWidth(lebarKolom[i]);
+        }
+
+        // Renderer kolom Status
+        tabelAktif.getColumnModel().getColumn(7).setCellRenderer(new StatusBadgeRenderer());
+
+        // Renderer kolom Durasi
+        tabelAktif.getColumnModel().getColumn(6).setCellRenderer(new DurasiRenderer());
+
+        // Renderer kolom Aksi (tombol Checkout)
+        tabelAktif.getColumnModel().getColumn(8).setCellRenderer(new TombolRenderer("Checkout"));
+        tabelAktif.getColumnModel().getColumn(8).setCellEditor(
+                new TombolEditor(new JCheckBox(), this));
+
+        JScrollPane scrollTabel = new JScrollPane(tabelAktif);
+        scrollTabel.setBorder(BorderFactory.createLineBorder(new Color(220, 220, 220)));
+        scrollTabel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createEmptyBorder(10, 0, 0, 0),
+                BorderFactory.createLineBorder(new Color(220, 220, 220))
+        ));
+
+        panel.add(scrollTabel, BorderLayout.CENTER);
+
+        return panel;
+    }
+
+    private JPanel buatSummaryPanel() {
+        JPanel panel = new JPanel(new GridLayout(1, 4, 10, 0));
+        panel.setOpaque(false);
+
+        lblTotalAktif   = buatMetricCard("Total Aktif", "0", ORANYE);
+        lblLapakTerisi  = buatMetricCard("Lapak Terisi", "0", HIJAU);
+        lblOvertime     = buatMetricCard("Overtime", "0", MERAH);
+        lblPosisiKosong = buatMetricCard("Posisi Kosong", "0", new Color(100, 100, 100));
+
+        panel.add(lblTotalAktif.getParent());
+        panel.add(lblLapakTerisi.getParent());
+        panel.add(lblOvertime.getParent());
+        panel.add(lblPosisiKosong.getParent());
+
+        return panel;
+    }
+
+    private JLabel buatMetricCard(String labelTeks, String nilai, Color warnaAngka) {
+        JPanel card = new JPanel(new BorderLayout());
+        card.setBackground(Color.WHITE);
+        card.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(220, 220, 220)),
+                BorderFactory.createEmptyBorder(10, 14, 10, 14)
+        ));
+
+        JLabel lblLabel = new JLabel(labelTeks);
+        lblLabel.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        lblLabel.setForeground(new Color(120, 120, 120));
+
+        JLabel lblNilai = new JLabel(nilai);
+        lblNilai.setFont(new Font("Segoe UI", Font.BOLD, 22));
+        lblNilai.setForeground(warnaAngka);
+
+        card.add(lblLabel, BorderLayout.NORTH);
+        card.add(lblNilai, BorderLayout.CENTER);
+
+        return lblNilai;
+    }
+
+    // =========================================================
+    // LOAD DATA
+    // =========================================================
+
+    private void muatSemuaData() {
+        muatKartuLapak();
+        muatTabelAktif();
+    }
+
+    private void muatKartuLapak() {
         gridPanel.removeAll();
         kartuMap.clear();
-        timerLabelMap.clear();
 
-        // Hentikan semua timer yang sedang berjalan sebelum reload
-        for (LapakTimerThread timer : timerMap.values()) {
-            timer.hentikan();
-        }
+        // Hentikan semua timer
+        for (LapakTimerThread t : timerMap.values()) t.hentikan();
         timerMap.clear();
 
         List<Lapak> daftarLapak = lapakController.semuaLapak();
 
         if (daftarLapak == null || daftarLapak.isEmpty()) {
-            JLabel kosongLabel = new JLabel("Belum ada lapak terdaftar.", SwingConstants.CENTER);
-            kosongLabel.setFont(new Font("Segoe UI", Font.ITALIC, 14));
-            kosongLabel.setForeground(Color.GRAY);
-            gridPanel.add(kosongLabel);
+            JLabel kosong = new JLabel("Belum ada lapak terdaftar.", SwingConstants.CENTER);
+            kosong.setFont(new Font("Segoe UI", Font.ITALIC, 14));
+            kosong.setForeground(Color.GRAY);
+            gridPanel.add(kosong);
         } else {
             for (Lapak lapak : daftarLapak) {
                 JPanel kartu = buatKartuLapak(lapak);
                 kartuMap.put(lapak.getId(), kartu);
                 gridPanel.add(kartu);
 
-                // Jika lapak sedang TERISI, cari transaksi aktif dan jalankan timer
-                if (lapak.getStatus().equals("TERISI")) {
-                    Transaksi transaksiAktif = lapakController.getTransaksiAktifByLapak(lapak.getId());
-                    if (transaksiAktif != null) {
-                        mulaiTimer(lapak, transaksiAktif);
-                    }
+                // Mulai timer untuk setiap transaksi aktif di lapak ini
+                List<Transaksi> aktifList =
+                        lapakController.getSemuaTransaksiAktifByLapak(lapak.getId());
+                for (Transaksi t : aktifList) {
+                    mulaiTimer(t);
                 }
             }
         }
@@ -138,133 +319,281 @@ public class LapakPanel extends JPanel implements LapakTimerThread.LapakTimerLis
         gridPanel.repaint();
     }
 
+    private void muatTabelAktif() {
+        modelTabelAktif.setRowCount(0);
+
+        List<Transaksi> aktifList = lapakController.getSemuaTransaksiAktif();
+        List<Lapak> semuaLapak   = lapakController.semuaLapak();
+
+        int totalAktif    = aktifList.size();
+        int overtime      = 0;
+        int posisiKosong  = 0;
+
+        // Hitung posisi kosong
+        for (Lapak l : semuaLapak) {
+            List<Transaksi> isiLapak =
+                    lapakController.getSemuaTransaksiAktifByLapak(l.getId());
+            posisiKosong += (l.getKapasitas() - isiLapak.size());
+        }
+
+        for (Transaksi t : aktifList) {
+            // Cari nama lapak
+            String namaLapak = "-";
+            for (Lapak l : semuaLapak) {
+                if (l.getId() == t.getLapakId()) {
+                    namaLapak = l.getNamaLapak();
+                    break;
+                }
+            }
+
+            // Hitung durasi
+            long menitBerjalan = 0;
+            if (t.getWaktuCheckin() != null) {
+                menitBerjalan = Duration.between(
+                        t.getWaktuCheckin(), LocalDateTime.now()).toMinutes();
+            }
+            String durasiStr = formatDurasiMenit(menitBerjalan);
+
+            // Cek overtime
+            boolean isOvertime = false;
+            if (t.getDurasiPesanMenit() != null && t.getDurasiPesanMenit() > 0) {
+                isOvertime = menitBerjalan >= t.getDurasiPesanMenit();
+            }
+            if (isOvertime) overtime++;
+
+            String statusStr  = isOvertime ? "OVERTIME" : "AKTIF";
+            String waktuCI    = t.getWaktuCheckin() != null
+                    ? t.getWaktuCheckin().format(
+                            java.time.format.DateTimeFormatter.ofPattern("HH:mm")) : "-";
+
+            modelTabelAktif.addRow(new Object[]{
+                t.getNamaPelanggan(),
+                t.getNoHpPelanggan() != null ? t.getNoHpPelanggan() : "-",
+                namaLapak,
+                t.getJenisKolam(),
+                t.getPosisi() != null ? t.getPosisi() : "-",
+                waktuCI,
+                durasiStr,
+                statusStr,
+                "Checkout"
+            });
+        }
+
+        // Update metric cards
+        lblTotalAktif.setText(String.valueOf(totalAktif));
+        lblLapakTerisi.setText(String.valueOf(
+                semuaLapak.stream().filter(l -> l.getStatus().equals("TERISI")).count()));
+        lblOvertime.setText(String.valueOf(overtime));
+        lblPosisiKosong.setText(String.valueOf(posisiKosong));
+    }
+
     // =========================================================
     // KARTU LAPAK
     // =========================================================
 
     private JPanel buatKartuLapak(Lapak lapak) {
-        JPanel kartu = new JPanel();
-        kartu.setLayout(new BoxLayout(kartu, BoxLayout.Y_AXIS));
+        List<Transaksi> aktifList =
+                lapakController.getSemuaTransaksiAktifByLapak(lapak.getId());
+
+        JPanel kartu = new JPanel(new BorderLayout());
+        kartu.setBackground(Color.WHITE);
         kartu.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(warnaBorderStatus(lapak), 2),
-                BorderFactory.createEmptyBorder(12, 12, 12, 12)
+                BorderFactory.createLineBorder(warnaBorder(lapak), 2),
+                BorderFactory.createEmptyBorder(0, 0, 0, 0)
         ));
-        kartu.setBackground(warnaBgStatus(lapak));
-        kartu.setPreferredSize(new Dimension(200, 220));
 
-        // Label nama lapak
-        JLabel namaLabel = new JLabel(lapak.getNamaLapak());
-        namaLabel.setFont(new Font("Segoe UI", Font.BOLD, 15));
-        namaLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        // -- Header kartu --
+        JPanel header = new JPanel(new BorderLayout());
+        header.setBackground(Color.WHITE);
+        header.setBorder(BorderFactory.createEmptyBorder(10, 12, 8, 12));
 
-        // Label jenis kolam
-        JLabel jenisLabel = new JLabel("[" + lapak.getJenisKolam() + "]");
-        jenisLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        jenisLabel.setForeground(new Color(100, 100, 100));
-        jenisLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        JLabel lblNama = new JLabel(lapak.getNamaLapak());
+        lblNama.setFont(new Font("Segoe UI", Font.BOLD, 13));
 
-        // Label status
-        JLabel statusLabel = new JLabel(lapak.getStatus());
-        statusLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
-        statusLabel.setForeground(warnaTextStatus(lapak));
-        statusLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        JLabel lblBadge = new JLabel(lapak.getStatus());
+        lblBadge.setFont(new Font("Segoe UI", Font.BOLD, 11));
+        lblBadge.setOpaque(true);
+        lblBadge.setBorder(BorderFactory.createEmptyBorder(2, 8, 2, 8));
+        lblBadge.setBackground(warnaBgBadge(lapak));
+        lblBadge.setForeground(warnaTextBadge(lapak));
 
-        // Label timer (default kosong)
-        JLabel timerLabel = new JLabel("--:--:--");
-        timerLabel.setFont(new Font("Consolas", Font.BOLD, 18));
-        timerLabel.setForeground(new Color(52, 73, 94));
-        timerLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-        timerLabelMap.put(lapak.getId(), timerLabel);
+        header.add(lblNama, BorderLayout.WEST);
+        header.add(lblBadge, BorderLayout.EAST);
 
-        // Tombol aksi
-        JPanel tombolPanel = buatTombolAksi(lapak);
-        tombolPanel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        // -- Jenis + kapasitas --
+        JPanel subHeader = new JPanel(new BorderLayout());
+        subHeader.setBackground(new Color(248, 249, 250));
+        subHeader.setBorder(BorderFactory.createEmptyBorder(4, 12, 4, 12));
 
-        kartu.add(namaLabel);
-        kartu.add(Box.createVerticalStrut(4));
-        kartu.add(jenisLabel);
-        kartu.add(Box.createVerticalStrut(8));
-        kartu.add(statusLabel);
-        kartu.add(Box.createVerticalStrut(6));
-        kartu.add(timerLabel);
-        kartu.add(Box.createVerticalGlue());
-        kartu.add(tombolPanel);
+        JLabel lblJenis = new JLabel(lapak.getJenisKolam());
+        lblJenis.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        lblJenis.setForeground(new Color(100, 100, 100));
+
+        JLabel lblKapasitas = new JLabel(aktifList.size() + "/" + lapak.getKapasitas() + " terisi");
+        lblKapasitas.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        lblKapasitas.setForeground(new Color(100, 100, 100));
+
+        subHeader.add(lblJenis, BorderLayout.WEST);
+        subHeader.add(lblKapasitas, BorderLayout.EAST);
+
+        // -- List posisi --
+        JPanel posisiPanel = new JPanel();
+        posisiPanel.setLayout(new BoxLayout(posisiPanel, BoxLayout.Y_AXIS));
+        posisiPanel.setBackground(Color.WHITE);
+        posisiPanel.setBorder(BorderFactory.createEmptyBorder(4, 12, 4, 12));
+
+        // Buat map posisi terisi
+        Map<Integer, Transaksi> mapPosisi = new HashMap<>();
+        for (Transaksi t : aktifList) {
+            if (t.getPosisi() != null) mapPosisi.put(t.getPosisi(), t);
+        }
+
+        for (int i = 1; i <= lapak.getKapasitas(); i++) {
+            posisiPanel.add(buatPosisiRow(i, mapPosisi.get(i)));
+            if (i < lapak.getKapasitas()) {
+                JSeparator sep = new JSeparator();
+                sep.setForeground(new Color(240, 240, 240));
+                posisiPanel.add(sep);
+            }
+        }
+
+        // -- Tombol footer --
+        JPanel footer = buatFooterKartu(lapak, aktifList);
+
+        // Susun kartu
+        JPanel topSection = new JPanel(new BorderLayout());
+        topSection.setBackground(Color.WHITE);
+        topSection.add(header, BorderLayout.NORTH);
+        topSection.add(subHeader, BorderLayout.SOUTH);
+
+        kartu.add(topSection, BorderLayout.NORTH);
+        kartu.add(posisiPanel, BorderLayout.CENTER);
+        kartu.add(footer, BorderLayout.SOUTH);
 
         return kartu;
     }
 
-    private JPanel buatTombolAksi(Lapak lapak) {
-        JPanel panel = new JPanel(new FlowLayout(FlowLayout.CENTER, 6, 0));
-        panel.setOpaque(false);
+    private JPanel buatPosisiRow(int noPosisi, Transaksi transaksi) {
+        JPanel row = new JPanel(new BorderLayout(8, 0));
+        row.setBackground(Color.WHITE);
+        row.setBorder(BorderFactory.createEmptyBorder(6, 0, 6, 0));
+        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 38));
 
-        if (!lapak.isAktif()) {
-            JLabel nonaktifLabel = new JLabel("NONAKTIF");
-            nonaktifLabel.setFont(new Font("Segoe UI", Font.ITALIC, 11));
-            nonaktifLabel.setForeground(Color.GRAY);
-            panel.add(nonaktifLabel);
-            return panel;
+        // Nomor posisi
+        JLabel lblNo = new JLabel(String.valueOf(noPosisi), SwingConstants.CENTER);
+        lblNo.setFont(new Font("Segoe UI", Font.BOLD, 11));
+        lblNo.setPreferredSize(new Dimension(24, 24));
+        lblNo.setOpaque(true);
+
+        if (transaksi != null) {
+            lblNo.setBackground(new Color(250, 238, 218));
+            lblNo.setForeground(new Color(133, 79, 11));
+        } else {
+            lblNo.setBackground(new Color(234, 243, 222));
+            lblNo.setForeground(new Color(59, 109, 17));
         }
 
-        switch (lapak.getStatus()) {
-            case "KOSONG":
-                JButton checkinBtn = buatTombol("Check-in", new Color(39, 174, 96));
-                checkinBtn.addActionListener(e -> bukaCheckinDialog(lapak));
-                panel.add(checkinBtn);
-                break;
+        // Konten tengah
+        JPanel tengah = new JPanel(new BorderLayout());
+        tengah.setOpaque(false);
 
-            case "TERISI":
-                JButton checkoutBtn = buatTombol("Checkout", new Color(192, 57, 43));
-                checkoutBtn.addActionListener(e -> bukaCheckoutDialog(lapak));
-                panel.add(checkoutBtn);
-                break;
+        if (transaksi != null) {
+            JLabel lblNama = new JLabel(transaksi.getNamaPelanggan());
+            lblNama.setFont(new Font("Segoe UI", Font.PLAIN, 12));
 
-            default:
-                break;
+            // Timer label — pakai nama unik berdasarkan transaksiId
+            JLabel lblTimer = new JLabel("--:--:--");
+            lblTimer.setName("timer_" + transaksi.getId());
+            lblTimer.setFont(new Font("Consolas", Font.PLAIN, 11));
+            lblTimer.setForeground(new Color(100, 100, 100));
+
+            tengah.add(lblNama, BorderLayout.WEST);
+            tengah.add(lblTimer, BorderLayout.EAST);
+        } else {
+            JLabel lblKosong = new JLabel("— kosong");
+            lblKosong.setFont(new Font("Segoe UI", Font.ITALIC, 11));
+            lblKosong.setForeground(new Color(160, 160, 160));
+            tengah.add(lblKosong, BorderLayout.WEST);
         }
 
-        return panel;
+        row.add(lblNo, BorderLayout.WEST);
+        row.add(tengah, BorderLayout.CENTER);
+
+        return row;
     }
 
-    private JButton buatTombol(String teks, Color warna) {
+    private JPanel buatFooterKartu(Lapak lapak, List<Transaksi> aktifList) {
+        JPanel footer = new JPanel(new FlowLayout(FlowLayout.CENTER, 6, 8));
+        footer.setBackground(new Color(248, 249, 250));
+        footer.setBorder(BorderFactory.createMatteBorder(
+                1, 0, 0, 0, new Color(235, 235, 235)));
+
+        boolean bisaCheckin = lapakController.bisaCheckin(lapak);
+        boolean adaAktif    = !aktifList.isEmpty();
+
+        if (!lapak.isAktif()) {
+            JLabel lbl = new JLabel("Nonaktif");
+            lbl.setFont(new Font("Segoe UI", Font.ITALIC, 11));
+            lbl.setForeground(Color.GRAY);
+            footer.add(lbl);
+            return footer;
+        }
+
+        if (bisaCheckin) {
+            JButton btnCI = buatTombolKecil("+ Check-in", HIJAU);
+            btnCI.addActionListener(e -> bukaCheckinDialog(lapak));
+            footer.add(btnCI);
+        }
+
+        if (adaAktif) {
+            JButton btnCO = buatTombolKecil("Checkout", MERAH);
+            btnCO.addActionListener(e -> bukaCheckoutDialog(lapak));
+            footer.add(btnCO);
+        }
+
+        return footer;
+    }
+
+    private JButton buatTombolKecil(String teks, Color warna) {
         JButton btn = new JButton(teks);
-        btn.setFont(new Font("Segoe UI", Font.BOLD, 12));
-        btn.setBackground(warna);
-        btn.setForeground(Color.WHITE);
+        btn.setFont(new Font("Segoe UI", Font.BOLD, 11));
+        btn.setBackground(warna.brighter().brighter());
+        btn.setForeground(warna.darker().darker());
         btn.setFocusPainted(false);
         btn.setBorderPainted(false);
         btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        btn.setPreferredSize(new Dimension(100, 30));
+        btn.setPreferredSize(new Dimension(90, 26));
         return btn;
     }
 
     // =========================================================
-    // WARNA BERDASARKAN STATUS
+    // WARNA HELPER
     // =========================================================
 
-    private Color warnaBgStatus(Lapak lapak) {
+    private Color warnaBorder(Lapak lapak) {
+        if (!lapak.isAktif()) return new Color(200, 200, 200);
+        switch (lapak.getStatus()) {
+            case "KOSONG": return new Color(39, 174, 96);
+            case "TERISI": return new Color(230, 126, 34);
+            default:       return new Color(200, 200, 200);
+        }
+    }
+
+    private Color warnaBgBadge(Lapak lapak) {
         if (!lapak.isAktif()) return new Color(220, 220, 220);
         switch (lapak.getStatus()) {
-            case "KOSONG":  return new Color(232, 245, 233);
-            case "TERISI":  return new Color(255, 243, 224);
-            default:        return Color.WHITE;
+            case "KOSONG": return new Color(234, 243, 222);
+            case "TERISI": return new Color(250, 238, 218);
+            default:       return new Color(220, 220, 220);
         }
     }
 
-    private Color warnaBorderStatus(Lapak lapak) {
+    private Color warnaTextBadge(Lapak lapak) {
         if (!lapak.isAktif()) return Color.GRAY;
         switch (lapak.getStatus()) {
-            case "KOSONG":  return new Color(39, 174, 96);
-            case "TERISI":  return new Color(230, 126, 34);
-            default:        return Color.LIGHT_GRAY;
-        }
-    }
-
-    private Color warnaTextStatus(Lapak lapak) {
-        if (!lapak.isAktif()) return Color.GRAY;
-        switch (lapak.getStatus()) {
-            case "KOSONG":  return new Color(39, 174, 96);
-            case "TERISI":  return new Color(230, 126, 34);
-            default:        return Color.DARK_GRAY;
+            case "KOSONG": return new Color(59, 109, 17);
+            case "TERISI": return new Color(133, 79, 11);
+            default:       return Color.GRAY;
         }
     }
 
@@ -275,144 +604,268 @@ public class LapakPanel extends JPanel implements LapakTimerThread.LapakTimerLis
     private void bukaCheckinDialog(Lapak lapak) {
         CheckinDialog dialog = new CheckinDialog(
                 (Frame) SwingUtilities.getWindowAncestor(this),
-                lapak,
-                lapakController
-        );
+                lapak, lapakController);
         dialog.setVisible(true);
 
-        // Setelah dialog ditutup, cek apakah checkin berhasil
         if (dialog.isCheckinBerhasil()) {
-            Transaksi transaksiAktif = lapakController.getTransaksiAktifByLapak(lapak.getId());
-            if (transaksiAktif != null) {
-                lapak.setStatus("TERISI");
-                mulaiTimer(lapak, transaksiAktif);
-                perbaruiKartu(lapak);
-            }
+            refresh();
         }
     }
 
-    private void bukaCheckoutDialog(Lapak lapak) {
-        Transaksi transaksiAktif = lapakController.getTransaksiAktifByLapak(lapak.getId());
-        if (transaksiAktif == null) {
+    public void bukaCheckoutDialog(Lapak lapak) {
+        List<Transaksi> aktifList =
+                lapakController.getSemuaTransaksiAktifByLapak(lapak.getId());
+        if (aktifList.isEmpty()) {
             JOptionPane.showMessageDialog(this,
-                    "Tidak ditemukan transaksi aktif untuk lapak ini.",
+                    "Tidak ada pelanggan aktif di lapak ini.",
                     "Info", JOptionPane.INFORMATION_MESSAGE);
             return;
         }
 
         CheckoutDialog dialog = new CheckoutDialog(
                 (Frame) SwingUtilities.getWindowAncestor(this),
-                lapak,
-                transaksiAktif,
-                transaksiController
-        );
+                lapak, aktifList, transaksiController, lapakController);
         dialog.setVisible(true);
 
         if (dialog.isCheckoutBerhasil()) {
-            hentikanTimer(lapak.getId());
-            lapak.setStatus("KOSONG");
-            perbaruiKartu(lapak);
+            refresh();
+        }
+    }
+
+    /**
+     * Checkout langsung dari baris tabel pelanggan aktif.
+     */
+    public void checkoutDariTabel(int baris) {
+        List<Transaksi> aktifList = lapakController.getSemuaTransaksiAktif();
+        if (baris < 0 || baris >= aktifList.size()) return;
+
+        Transaksi transaksi = aktifList.get(baris);
+
+        // Cari lapak
+        Lapak lapak = null;
+        for (Lapak l : lapakController.semuaLapak()) {
+            if (l.getId() == transaksi.getLapakId()) {
+                lapak = l;
+                break;
+            }
+        }
+        if (lapak == null) return;
+
+        List<Transaksi> aktifDiLapak =
+                lapakController.getSemuaTransaksiAktifByLapak(lapak.getId());
+
+        CheckoutDialog dialog = new CheckoutDialog(
+                (Frame) SwingUtilities.getWindowAncestor(this),
+                lapak, aktifDiLapak, transaksiController, lapakController);
+        dialog.setVisible(true);
+
+        if (dialog.isCheckoutBerhasil()) {
+            refresh();
         }
     }
 
     // =========================================================
-    // TIMER MANAGEMENT
+    // TIMER
     // =========================================================
 
-    private void mulaiTimer(Lapak lapak, Transaksi transaksi) {
-        // Hentikan timer lama jika ada
-        hentikanTimer(lapak.getId());
+    private void mulaiTimer(Transaksi transaksi) {
+        hentikanTimer(transaksi.getId());
+
+        // Cari lapak untuk transaksi ini
+        Lapak lapak = null;
+        for (Lapak l : lapakController.semuaLapak()) {
+            if (l.getId() == transaksi.getLapakId()) {
+                lapak = l;
+                break;
+            }
+        }
+        if (lapak == null) return;
 
         LapakTimerThread timer = new LapakTimerThread(lapak, transaksi, this);
-        timerMap.put(lapak.getId(), timer);
+        timerMap.put(transaksi.getId(), timer);
         timer.start();
     }
 
-    private void hentikanTimer(int lapakId) {
-        LapakTimerThread timer = timerMap.get(lapakId);
+    private void hentikanTimer(int transaksiId) {
+        LapakTimerThread timer = timerMap.get(transaksiId);
         if (timer != null) {
             timer.hentikan();
-            timerMap.remove(lapakId);
+            timerMap.remove(transaksiId);
         }
     }
 
     // =========================================================
-    // CALLBACK DARI TIMER THREAD
+    // CALLBACK TIMER
     // =========================================================
 
     @Override
     public void onTimerUpdate(int lapakId, String waktuBerjalan, boolean overtime) {
-        // Update UI harus di EDT (Event Dispatch Thread)
+        // Cari label timer di semua kartu berdasarkan nama komponen
         SwingUtilities.invokeLater(() -> {
-            JLabel timerLabel = timerLabelMap.get(lapakId);
-            if (timerLabel != null) {
-                timerLabel.setText(waktuBerjalan);
-                timerLabel.setForeground(overtime
-                        ? new Color(192, 57, 43)   // Merah jika overtime
-                        : new Color(52, 73, 94));   // Normal
+            for (JPanel kartu : kartuMap.values()) {
+                cariDanUpdateTimerLabel(kartu, lapakId, waktuBerjalan, overtime);
             }
+            // Update tabel juga
+            muatTabelAktif();
         });
     }
 
     @Override
     public void onTimerSelesai(int lapakId) {
-        SwingUtilities.invokeLater(() -> {
-            JLabel timerLabel = timerLabelMap.get(lapakId);
-            if (timerLabel != null) {
-                timerLabel.setText("--:--:--");
-            }
-        });
+        SwingUtilities.invokeLater(this::muatTabelAktif);
     }
 
-    // =========================================================
-    // HELPER
-    // =========================================================
-
-    /**
-     * Rebuild kartu lapak tertentu setelah ada perubahan status.
-     */
-    private void perbaruiKartu(Lapak lapak) {
-        SwingUtilities.invokeLater(() -> {
-            JPanel kartuLama = kartuMap.get(lapak.getId());
-            if (kartuLama != null) {
-                int index = getComponentIndex(kartuLama);
-                if (index >= 0) {
-                    JPanel kartuBaru = buatKartuLapak(lapak);
-                    kartuMap.put(lapak.getId(), kartuBaru);
-                    timerLabelMap.put(lapak.getId(),
-                            (JLabel) cariKomponenTimer(kartuBaru));
-                    gridPanel.remove(index);
-                    gridPanel.add(kartuBaru, index);
-                    gridPanel.revalidate();
-                    gridPanel.repaint();
-                }
-            }
-        });
-    }
-
-    private int getComponentIndex(Component comp) {
-        for (int i = 0; i < gridPanel.getComponentCount(); i++) {
-            if (gridPanel.getComponent(i) == comp) return i;
-        }
-        return -1;
-    }
-
-    private Component cariKomponenTimer(JPanel kartu) {
-        for (Component c : kartu.getComponents()) {
+    private void cariDanUpdateTimerLabel(Container container,
+                                          int transaksiId,
+                                          String waktu,
+                                          boolean overtime) {
+        for (Component c : container.getComponents()) {
             if (c instanceof JLabel) {
-                JLabel label = (JLabel) c;
-                if (label.getFont().getName().equals("Consolas")) {
-                    return label;
+                JLabel lbl = (JLabel) c;
+                if (("timer_" + transaksiId).equals(lbl.getName())) {
+                    lbl.setText(waktu);
+                    lbl.setForeground(overtime ? MERAH : new Color(100, 100, 100));
                 }
+            } else if (c instanceof Container) {
+                cariDanUpdateTimerLabel((Container) c, transaksiId, waktu, overtime);
             }
         }
-        return null;
     }
 
-    /**
-     * Refresh seluruh panel (reload dari DB).
-     */
+    // =========================================================
+    // TAB NAVIGATION
+    // =========================================================
+
+    private void pindahTab(String key) {
+        CardLayout cl = (CardLayout) ((JPanel) tabKartu.getParent()).getLayout();
+        cl.show(tabKartu.getParent(), key);
+
+        boolean kartuAktif = key.equals("KARTU");
+        btnTabKartu.setFont(new Font("Segoe UI",
+                kartuAktif ? Font.BOLD : Font.PLAIN, 13));
+        btnTabKartu.setForeground(kartuAktif ? Color.WHITE : new Color(174, 214, 241));
+        btnTabKartu.setBorder(kartuAktif
+                ? BorderFactory.createCompoundBorder(
+                        BorderFactory.createMatteBorder(0, 0, 3, 0, Color.WHITE),
+                        BorderFactory.createEmptyBorder(8, 16, 0, 16))
+                : BorderFactory.createEmptyBorder(8, 16, 0, 16));
+
+        btnTabAktif.setFont(new Font("Segoe UI",
+                !kartuAktif ? Font.BOLD : Font.PLAIN, 13));
+        btnTabAktif.setForeground(!kartuAktif ? Color.WHITE : new Color(174, 214, 241));
+        btnTabAktif.setBorder(!kartuAktif
+                ? BorderFactory.createCompoundBorder(
+                        BorderFactory.createMatteBorder(0, 0, 3, 0, Color.WHITE),
+                        BorderFactory.createEmptyBorder(8, 16, 0, 16))
+                : BorderFactory.createEmptyBorder(8, 16, 0, 16));
+
+        if (!kartuAktif) muatTabelAktif();
+    }
+
     public void refresh() {
-        muatSemuaLapak();
+        muatSemuaData();
+    }
+
+    // =========================================================
+    // HELPER FORMAT
+    // =========================================================
+
+    private String formatDurasiMenit(long totalMenit) {
+        long jam   = totalMenit / 60;
+        long menit = totalMenit % 60;
+        return String.format("%02d:%02d", jam, menit);
+    }
+
+    // =========================================================
+    // INNER CLASS RENDERER & EDITOR TABEL
+    // =========================================================
+
+    // Renderer badge status
+    static class StatusBadgeRenderer extends DefaultTableCellRenderer {
+        @Override
+        public Component getTableCellRendererComponent(JTable table, Object value,
+                boolean selected, boolean focus, int row, int col) {
+            JLabel lbl = new JLabel(String.valueOf(value));
+            lbl.setOpaque(true);
+            lbl.setFont(new Font("Segoe UI", Font.BOLD, 11));
+            lbl.setHorizontalAlignment(SwingConstants.CENTER);
+            lbl.setBorder(BorderFactory.createEmptyBorder(0, 6, 0, 6));
+
+            if ("OVERTIME".equals(value)) {
+                lbl.setBackground(new Color(252, 235, 235));
+                lbl.setForeground(new Color(163, 45, 45));
+            } else {
+                lbl.setBackground(new Color(234, 243, 222));
+                lbl.setForeground(new Color(59, 109, 17));
+            }
+            return lbl;
+        }
+    }
+
+    // Renderer durasi — merah jika overtime
+    static class DurasiRenderer extends DefaultTableCellRenderer {
+        @Override
+        public Component getTableCellRendererComponent(JTable table, Object value,
+                boolean selected, boolean focus, int row, int col) {
+            JLabel lbl = new JLabel(String.valueOf(value));
+            lbl.setFont(new Font("Consolas", Font.PLAIN, 12));
+            lbl.setOpaque(true);
+            lbl.setBackground(selected
+                    ? table.getSelectionBackground() : table.getBackground());
+
+            String status = (String) table.getValueAt(row, 7);
+            lbl.setForeground("OVERTIME".equals(status)
+                    ? new Color(163, 45, 45) : table.getForeground());
+            return lbl;
+        }
+    }
+
+    // Renderer tombol di tabel
+    static class TombolRenderer extends DefaultTableCellRenderer {
+        private final String teks;
+        TombolRenderer(String teks) { this.teks = teks; }
+
+        @Override
+        public Component getTableCellRendererComponent(JTable table, Object value,
+                boolean selected, boolean focus, int row, int col) {
+            JButton btn = new JButton(teks);
+            btn.setFont(new Font("Segoe UI", Font.BOLD, 11));
+            btn.setBackground(new Color(250, 238, 218));
+            btn.setForeground(new Color(133, 79, 11));
+            btn.setFocusPainted(false);
+            btn.setBorderPainted(false);
+            return btn;
+        }
+    }
+
+    // Editor tombol di tabel — trigger checkout saat diklik
+    static class TombolEditor extends DefaultCellEditor {
+        private final LapakPanel panel;
+        private int barisTerpilih;
+
+        TombolEditor(JCheckBox cb, LapakPanel panel) {
+            super(cb);
+            this.panel = panel;
+        }
+
+        @Override
+        public Component getTableCellEditorComponent(JTable table, Object value,
+                boolean selected, int row, int col) {
+            barisTerpilih = row;
+            JButton btn = new JButton("Checkout");
+            btn.setFont(new Font("Segoe UI", Font.BOLD, 11));
+            btn.setBackground(new Color(250, 238, 218));
+            btn.setForeground(new Color(133, 79, 11));
+            btn.setFocusPainted(false);
+            btn.setBorderPainted(false);
+            btn.addActionListener(e -> {
+                fireEditingStopped();
+                panel.checkoutDariTabel(barisTerpilih);
+            });
+            return btn;
+        }
+
+        @Override
+        public Object getCellEditorValue() { return "Checkout"; }
     }
 }
