@@ -9,6 +9,7 @@ import controller.TransaksiController;
 import model.DetailTangkapan;
 import model.Lapak;
 import model.Transaksi;
+import dao.TransaksiDao;
 import utils.FormatterUtil;
 import utils.ValidatorUtil;
 
@@ -25,11 +26,34 @@ import java.util.List;
 public class CheckoutDialog extends JDialog {
 
     private TransaksiController transaksiController;
+    private Transaksi transaksi;
     private LapakController lapakController;
     private Lapak lapak;
     private List<Transaksi> aktifList;
     private Transaksi transaksiDipilih;
     private boolean checkoutBerhasil = false;
+    private void batalkanTransaksi() { //PENTING WAKKK
+    // Ambil transaksi urutan pertama (index 0) dari list
+        if (aktifList != null && !aktifList.isEmpty()) {
+            model.Transaksi transaksiYgDibatalkan = aktifList.get(0); // <-- INI KUNCI NYA
+
+            System.out.println("DEBUG: Membatalkan transaksi ID: " + transaksiYgDibatalkan.getId());
+
+            transaksiYgDibatalkan.setStatusTransaksi("DIBATALKAN");
+            transaksiYgDibatalkan.setWaktuCheckout(java.time.LocalDateTime.now());
+
+            dao.TransaksiDao dao = new dao.TransaksiDao();
+            dao.update(transaksiYgDibatalkan);
+
+            System.out.println("DEBUG: Update database SUKSES.");
+            dispose(); // Tutup form
+
+        } else {
+            System.err.println("DEBUG ERROR: aktifList kosong!");
+            dispose();
+        }
+    }
+    
 
     // Komponen pemilih pelanggan
     private JList<String> listPelanggan;
@@ -423,7 +447,7 @@ public class CheckoutDialog extends JDialog {
         btnBatal.setFont(new Font("Segoe UI", Font.PLAIN, 13));
         btnBatal.setPreferredSize(new Dimension(90, 34));
         btnBatal.setFocusPainted(false);
-        btnBatal.addActionListener(e -> dispose());
+        btnBatal.addActionListener(e -> batalkanTransaksi());
 
         btnCheckout = new JButton("✔ Checkout");
         btnCheckout.setFont(new Font("Segoe UI", Font.BOLD, 13));

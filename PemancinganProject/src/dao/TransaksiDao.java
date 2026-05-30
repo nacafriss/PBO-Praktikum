@@ -27,53 +27,54 @@ public class TransaksiDao implements TransaksiDaoInterface {
                 "metode_bayar, status_transaksi, catatan, created_by) " +
                 "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
-        Connection conn = DBConnection.Connect();
-        if (conn == null) {
-            System.err.println("insert Transaksi gagal: koneksi null.");
-            return;
-        }
+        try (Connection conn = DBConnection.Connect()) {
+            if (conn == null) {
+                System.err.println("insert Transaksi gagal: koneksi null.");
+                return;
+            }
 
-        try (PreparedStatement stmt = conn.prepareStatement(query)) {
+            try (PreparedStatement stmt = conn.prepareStatement(query)) {
 
-            stmt.setInt(1, transaksi.getLapakId());
+                stmt.setInt(1, transaksi.getLapakId());
 
-            if (transaksi.getPelangganId() != null) stmt.setInt(2, transaksi.getPelangganId());
-            else stmt.setNull(2, Types.INTEGER);
+                if (transaksi.getPelangganId() != null) stmt.setInt(2, transaksi.getPelangganId());
+                else stmt.setNull(2, Types.INTEGER);
 
-            stmt.setString(3, transaksi.getJenisKolam());
-            stmt.setString(4, transaksi.getNamaPelanggan());
-            stmt.setString(5, transaksi.getNoHpPelanggan());
+                stmt.setString(3, transaksi.getJenisKolam());
+                stmt.setString(4, transaksi.getNamaPelanggan());
+                stmt.setString(5, transaksi.getNoHpPelanggan());
 
-            // Posisi baru
-            if (transaksi.getPosisi() != null) stmt.setInt(6, transaksi.getPosisi());
-            else stmt.setNull(6, Types.INTEGER);
+                // Posisi baru
+                if (transaksi.getPosisi() != null) stmt.setInt(6, transaksi.getPosisi());
+                else stmt.setNull(6, Types.INTEGER);
 
-            if (transaksi.getWaktuCheckin() != null)
-                stmt.setTimestamp(7, Timestamp.valueOf(transaksi.getWaktuCheckin()));
-            else stmt.setNull(7, Types.TIMESTAMP);
+                if (transaksi.getWaktuCheckin() != null)
+                    stmt.setTimestamp(7, Timestamp.valueOf(transaksi.getWaktuCheckin()));
+                else stmt.setNull(7, Types.TIMESTAMP);
 
-            if (transaksi.getWaktuCheckout() != null)
-                stmt.setTimestamp(8, Timestamp.valueOf(transaksi.getWaktuCheckout()));
-            else stmt.setNull(8, Types.TIMESTAMP);
+                if (transaksi.getWaktuCheckout() != null)
+                    stmt.setTimestamp(8, Timestamp.valueOf(transaksi.getWaktuCheckout()));
+                else stmt.setNull(8, Types.TIMESTAMP);
 
-            if (transaksi.getDurasiAktualMenit() != null) stmt.setInt(9, transaksi.getDurasiAktualMenit());
-            else stmt.setNull(9, Types.INTEGER);
+                if (transaksi.getDurasiAktualMenit() != null) stmt.setInt(9, transaksi.getDurasiAktualMenit());
+                else stmt.setNull(9, Types.INTEGER);
 
-            if (transaksi.getDurasiPesanMenit() != null) stmt.setInt(10, transaksi.getDurasiPesanMenit());
-            else stmt.setNull(10, Types.INTEGER);
+                if (transaksi.getDurasiPesanMenit() != null) stmt.setInt(10, transaksi.getDurasiPesanMenit());
+                else stmt.setNull(10, Types.INTEGER);
 
-            stmt.setBigDecimal(11, transaksi.getSubtotalIkan());
-            stmt.setBigDecimal(12, transaksi.getBiayaSewa());
-            stmt.setBigDecimal(13, transaksi.getDiskon());
-            stmt.setInt(14, transaksi.getPoinDigunakan());
-            stmt.setBigDecimal(15, transaksi.getTotalTagihan());
-            stmt.setString(16, transaksi.getMetodeBayar());
-            stmt.setString(17, transaksi.getStatusTransaksi());
-            stmt.setString(18, transaksi.getCatatan());
-            stmt.setString(19, transaksi.getCreatedBy());
+                stmt.setBigDecimal(11, transaksi.getSubtotalIkan());
+                stmt.setBigDecimal(12, transaksi.getBiayaSewa());
+                stmt.setBigDecimal(13, transaksi.getDiskon());
+                stmt.setInt(14, transaksi.getPoinDigunakan());
+                stmt.setBigDecimal(15, transaksi.getTotalTagihan());
+                stmt.setString(16, transaksi.getMetodeBayar());
+                stmt.setString(17, transaksi.getStatusTransaksi());
+                stmt.setString(18, transaksi.getCatatan());
+                stmt.setString(19, transaksi.getCreatedBy());
 
-            stmt.executeUpdate();
-            System.out.println("Transaksi berhasil diinsert!");
+                stmt.executeUpdate();
+                System.out.println("Transaksi berhasil diinsert!");
+            }
 
         } catch (SQLException e) {
             System.err.println("insert Transaksi gagal: " + e.getMessage());
@@ -89,53 +90,54 @@ public class TransaksiDao implements TransaksiDaoInterface {
                 "metode_bayar=?, status_transaksi=?, catatan=?, created_by=? " +
                 "WHERE id=?";
 
-        Connection conn = DBConnection.Connect();
-        if (conn == null) {
-            System.err.println("update Transaksi gagal: koneksi null.");
-            return;
-        }
+        try (Connection conn = DBConnection.Connect()) {
+            if (conn == null) {
+                System.err.println("update Transaksi gagal: koneksi null.");
+                return;
+            }
 
-        try (PreparedStatement stmt = conn.prepareStatement(query)) {
+            try (PreparedStatement stmt = conn.prepareStatement(query)) {
 
-            stmt.setInt(1, transaksi.getLapakId());
+                stmt.setInt(1, transaksi.getLapakId());
 
-            if (transaksi.getPelangganId() != null) stmt.setInt(2, transaksi.getPelangganId());
-            else stmt.setNull(2, Types.INTEGER);
+                if (transaksi.getPelangganId() != null) stmt.setInt(2, transaksi.getPelangganId());
+                else stmt.setNull(2, Types.INTEGER);
 
-            stmt.setString(3, transaksi.getJenisKolam());
-            stmt.setString(4, transaksi.getNamaPelanggan());
-            stmt.setString(5, transaksi.getNoHpPelanggan());
+                stmt.setString(3, transaksi.getJenisKolam());
+                stmt.setString(4, transaksi.getNamaPelanggan());
+                stmt.setString(5, transaksi.getNoHpPelanggan());
 
-            if (transaksi.getPosisi() != null) stmt.setInt(6, transaksi.getPosisi());
-            else stmt.setNull(6, Types.INTEGER);
+                if (transaksi.getPosisi() != null) stmt.setInt(6, transaksi.getPosisi());
+                else stmt.setNull(6, Types.INTEGER);
 
-            if (transaksi.getWaktuCheckin() != null)
-                stmt.setTimestamp(7, Timestamp.valueOf(transaksi.getWaktuCheckin()));
-            else stmt.setNull(7, Types.TIMESTAMP);
+                if (transaksi.getWaktuCheckin() != null)
+                    stmt.setTimestamp(7, Timestamp.valueOf(transaksi.getWaktuCheckin()));
+                else stmt.setNull(7, Types.TIMESTAMP);
 
-            if (transaksi.getWaktuCheckout() != null)
-                stmt.setTimestamp(8, Timestamp.valueOf(transaksi.getWaktuCheckout()));
-            else stmt.setNull(8, Types.TIMESTAMP);
+                if (transaksi.getWaktuCheckout() != null)
+                    stmt.setTimestamp(8, Timestamp.valueOf(transaksi.getWaktuCheckout()));
+                else stmt.setNull(8, Types.TIMESTAMP);
 
-            if (transaksi.getDurasiAktualMenit() != null) stmt.setInt(9, transaksi.getDurasiAktualMenit());
-            else stmt.setNull(9, Types.INTEGER);
+                if (transaksi.getDurasiAktualMenit() != null) stmt.setInt(9, transaksi.getDurasiAktualMenit());
+                else stmt.setNull(9, Types.INTEGER);
 
-            if (transaksi.getDurasiPesanMenit() != null) stmt.setInt(10, transaksi.getDurasiPesanMenit());
-            else stmt.setNull(10, Types.INTEGER);
+                if (transaksi.getDurasiPesanMenit() != null) stmt.setInt(10, transaksi.getDurasiPesanMenit());
+                else stmt.setNull(10, Types.INTEGER);
 
-            stmt.setBigDecimal(11, transaksi.getSubtotalIkan());
-            stmt.setBigDecimal(12, transaksi.getBiayaSewa());
-            stmt.setBigDecimal(13, transaksi.getDiskon());
-            stmt.setInt(14, transaksi.getPoinDigunakan());
-            stmt.setBigDecimal(15, transaksi.getTotalTagihan());
-            stmt.setString(16, transaksi.getMetodeBayar());
-            stmt.setString(17, transaksi.getStatusTransaksi());
-            stmt.setString(18, transaksi.getCatatan());
-            stmt.setString(19, transaksi.getCreatedBy());
+                stmt.setBigDecimal(11, transaksi.getSubtotalIkan());
+                stmt.setBigDecimal(12, transaksi.getBiayaSewa());
+                stmt.setBigDecimal(13, transaksi.getDiskon());
+                stmt.setInt(14, transaksi.getPoinDigunakan());
+                stmt.setBigDecimal(15, transaksi.getTotalTagihan());
+                stmt.setString(16, transaksi.getMetodeBayar());
+                stmt.setString(17, transaksi.getStatusTransaksi());
+                stmt.setString(18, transaksi.getCatatan());
+                stmt.setString(19, transaksi.getCreatedBy());
 
-            stmt.setInt(20, transaksi.getId());
+                stmt.setInt(20, transaksi.getId());
 
-            stmt.executeUpdate();
+                stmt.executeUpdate();
+            }
 
         } catch (SQLException e) {
             System.err.println("update Transaksi gagal: " + e.getMessage());
@@ -146,15 +148,16 @@ public class TransaksiDao implements TransaksiDaoInterface {
     public void delete(int id) {
         String query = "DELETE FROM transaksi WHERE id=?";
 
-        Connection conn = DBConnection.Connect();
-        if (conn == null) {
-            System.err.println("delete Transaksi gagal: koneksi null.");
-            return;
-        }
+        try (Connection conn = DBConnection.Connect()) {
+            if (conn == null) {
+                System.err.println("delete Transaksi gagal: koneksi null.");
+                return;
+            }
 
-        try (PreparedStatement stmt = conn.prepareStatement(query)) {
-            stmt.setInt(1, id);
-            stmt.executeUpdate();
+            try (PreparedStatement stmt = conn.prepareStatement(query)) {
+                stmt.setInt(1, id);
+                stmt.executeUpdate();
+            }
         } catch (SQLException e) {
             System.err.println("delete Transaksi gagal: " + e.getMessage());
         }
@@ -165,17 +168,18 @@ public class TransaksiDao implements TransaksiDaoInterface {
         List<Transaksi> list = new ArrayList<>();
         String query = "SELECT * FROM transaksi ORDER BY waktu_checkin DESC";
 
-        Connection conn = DBConnection.Connect();
-        if (conn == null) {
-            System.err.println("getAll Transaksi gagal: koneksi null.");
-            return list;
-        }
+        try (Connection conn = DBConnection.Connect()) {
+            if (conn == null) {
+                System.err.println("getAll Transaksi gagal: koneksi null.");
+                return list;
+            }
 
-        try (Statement stmt = conn.createStatement();
-             ResultSet rs = stmt.executeQuery(query)) {
+            try (Statement stmt = conn.createStatement();
+                 ResultSet rs = stmt.executeQuery(query)) {
 
-            while (rs.next()) {
-                list.add(mapResultSet(rs));
+                while (rs.next()) {
+                    list.add(mapResultSet(rs));
+                }
             }
 
         } catch (SQLException e) {
@@ -199,17 +203,19 @@ public class TransaksiDao implements TransaksiDaoInterface {
                 "WHERE lapak_id = ? AND status_transaksi = 'AKTIF' " +
                 "ORDER BY posisi ASC";
 
-        Connection conn = DBConnection.Connect();
-        if (conn == null) {
-            System.err.println("getAktifByLapakId gagal: koneksi null.");
-            return list;
-        }
+        try (Connection conn = DBConnection.Connect()) {
+            if (conn == null) {
+                System.err.println("getAktifByLapakId gagal: koneksi null.");
+                return list;
+            }
 
-        try (PreparedStatement stmt = conn.prepareStatement(query)) {
-            stmt.setInt(1, lapakId);
-            ResultSet rs = stmt.executeQuery();
-            while (rs.next()) {
-                list.add(mapResultSet(rs));
+            try (PreparedStatement stmt = conn.prepareStatement(query)) {
+                stmt.setInt(1, lapakId);
+                try (ResultSet rs = stmt.executeQuery()) {
+                    while (rs.next()) {
+                        list.add(mapResultSet(rs));
+                    }
+                }
             }
         } catch (SQLException e) {
             System.err.println("getAktifByLapakId gagal: " + e.getMessage());
@@ -228,19 +234,19 @@ public class TransaksiDao implements TransaksiDaoInterface {
                 "WHERE status_transaksi = 'AKTIF' " +
                 "ORDER BY waktu_checkin ASC";
 
-        Connection conn = DBConnection.Connect();
-        if (conn == null) {
-            System.err.println("getAllAktif gagal: koneksi null.");
-            return list;
-        }
-
-        try (Statement stmt = conn.createStatement();
-             ResultSet rs = stmt.executeQuery(query)) {
-
-            while (rs.next()) {
-                list.add(mapResultSet(rs));
+        try (Connection conn = DBConnection.Connect()) {
+            if (conn == null) {
+                System.err.println("getAllAktif gagal: koneksi null.");
+                return list;
             }
 
+            try (Statement stmt = conn.createStatement();
+                 ResultSet rs = stmt.executeQuery(query)) {
+
+                while (rs.next()) {
+                    list.add(mapResultSet(rs));
+                }
+            }
         } catch (SQLException e) {
             System.err.println("getAllAktif gagal: " + e.getMessage());
         }
@@ -257,18 +263,20 @@ public class TransaksiDao implements TransaksiDaoInterface {
                 "WHERE lapak_id = ? AND posisi = ? AND status_transaksi = 'AKTIF' " +
                 "LIMIT 1";
 
-        Connection conn = DBConnection.Connect();
-        if (conn == null) {
-            System.err.println("getAktifByLapakIdDanPosisi gagal: koneksi null.");
-            return null;
-        }
+        try (Connection conn = DBConnection.Connect()) {
+            if (conn == null) {
+                System.err.println("getAktifByLapakIdDanPosisi gagal: koneksi null.");
+                return null;
+            }
 
-        try (PreparedStatement stmt = conn.prepareStatement(query)) {
-            stmt.setInt(1, lapakId);
-            stmt.setInt(2, posisi);
-            ResultSet rs = stmt.executeQuery();
-            if (rs.next()) {
-                return mapResultSet(rs);
+            try (PreparedStatement stmt = conn.prepareStatement(query)) {
+                stmt.setInt(1, lapakId);
+                stmt.setInt(2, posisi);
+                try (ResultSet rs = stmt.executeQuery()) {
+                    if (rs.next()) {
+                        return mapResultSet(rs);
+                    }
+                }
             }
         } catch (SQLException e) {
             System.err.println("getAktifByLapakIdDanPosisi gagal: " + e.getMessage());
@@ -286,17 +294,19 @@ public class TransaksiDao implements TransaksiDaoInterface {
         String query = "SELECT posisi FROM transaksi " +
                 "WHERE lapak_id = ? AND status_transaksi = 'AKTIF'";
 
-        Connection conn = DBConnection.Connect();
-        if (conn == null) {
-            System.err.println("getPosisiTerpakai gagal: koneksi null.");
-            return listPosisi;
-        }
+        try (Connection conn = DBConnection.Connect()) {
+            if (conn == null) {
+                System.err.println("getPosisiTerpakai gagal: koneksi null.");
+                return listPosisi;
+            }
 
-        try (PreparedStatement stmt = conn.prepareStatement(query)) {
-            stmt.setInt(1, lapakId);
-            ResultSet rs = stmt.executeQuery();
-            while (rs.next()) {
-                listPosisi.add(rs.getInt("posisi"));
+            try (PreparedStatement stmt = conn.prepareStatement(query)) {
+                stmt.setInt(1, lapakId);
+                try (ResultSet rs = stmt.executeQuery()) {
+                    while (rs.next()) {
+                        listPosisi.add(rs.getInt("posisi"));
+                    }
+                }
             }
         } catch (SQLException e) {
             System.err.println("getPosisiTerpakai gagal: " + e.getMessage());
