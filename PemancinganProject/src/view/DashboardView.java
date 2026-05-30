@@ -156,11 +156,11 @@ public class DashboardView extends JFrame {
         lapakPanel = new LapakPanel();
         contentPanel.add(lapakPanel, "LAPAK");
 
-        // Panel Pelanggan (placeholder)
-        contentPanel.add(buatPlaceholder("Manajemen Pelanggan\n(Segera Hadir)"), "PELANGGAN");
-
-        // Panel Transaksi (placeholder)
-        contentPanel.add(buatPlaceholder("Riwayat Transaksi\n(Segera Hadir)"), "TRANSAKSI");
+        PelangganPanel pelangganPanel = new PelangganPanel();
+        contentPanel.add(pelangganPanel, "PELANGGAN");
+        
+        RiwayatTransaksiPanel riwayatPanel = new RiwayatTransaksiPanel();
+        contentPanel.add(riwayatPanel, "TRANSAKSI");
 
         // Panel Laporan (placeholder)
         contentPanel.add(buatPlaceholder("Laporan & Statistik\n(Segera Hadir)"), "LAPORAN");
