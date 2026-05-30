@@ -11,19 +11,18 @@ package view;
 import javax.swing.*;
 import java.awt.*;
 
+
 public class DashboardView extends JFrame {
 
     private JPanel sidebarPanel;
     private JPanel contentPanel;
     private CardLayout cardLayout;
-
     private LapakPanel lapakPanel;
 
-    // Warna tema
-    private static final Color SIDEBAR_BG    = new Color(26, 82, 118);
-    private static final Color SIDEBAR_HOVER = new Color(52, 152, 219);
-    private static final Color SIDEBAR_AKTIF = new Color(21, 67, 96);
-    private static final Color CONTENT_BG    = new Color(240, 244, 248);
+    private static final Color SIDEBAR_BG    = new Color(15, 23, 42);
+    private static final Color SIDEBAR_HOVER = new Color(30, 41, 59);
+    private static final Color SIDEBAR_AKTIF = new Color(37, 99, 235);
+    private static final Color CONTENT_BG    = new Color(15, 23, 42);
 
     public DashboardView() {
         initFrame();
@@ -32,88 +31,119 @@ public class DashboardView extends JFrame {
         tampilkanPanel("LAPAK");
     }
 
-    // =========================================================
-    // INISIALISASI FRAME
-    // =========================================================
-
     private void initFrame() {
         setTitle("Sistem Manajemen Pemancingan");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(1100, 700);
         setMinimumSize(new Dimension(900, 600));
-        setLocationRelativeTo(null); // Tengah layar
+        setLocationRelativeTo(null);
         setLayout(new BorderLayout());
+        // Warna background frame
+        getContentPane().setBackground(CONTENT_BG);
     }
-
-    // =========================================================
-    // SIDEBAR
-    // =========================================================
 
     private void initSidebar() {
         sidebarPanel = new JPanel();
         sidebarPanel.setLayout(new BoxLayout(sidebarPanel, BoxLayout.Y_AXIS));
         sidebarPanel.setBackground(SIDEBAR_BG);
-        sidebarPanel.setPreferredSize(new Dimension(200, getHeight()));
+        sidebarPanel.setPreferredSize(new Dimension(190, getHeight()));
 
-        // Logo / Judul Aplikasi
+        // Logo
         JPanel logoPanel = new JPanel(new BorderLayout());
-        logoPanel.setBackground(SIDEBAR_AKTIF);
-        logoPanel.setMaximumSize(new Dimension(200, 70));
-        logoPanel.setPreferredSize(new Dimension(200, 70));
-        logoPanel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
+        logoPanel.setBackground(SIDEBAR_BG);
+        logoPanel.setMaximumSize(new Dimension(190, 80));
+        logoPanel.setPreferredSize(new Dimension(190, 80));
+        logoPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 12, 20));
 
-        JLabel logoLabel = new JLabel("<html><center><br>Pemancingan</center></html>");
-        logoLabel.setFont(new Font("Segoe UI", Font.BOLD, 15));
-        logoLabel.setForeground(Color.WHITE);
-        logoLabel.setHorizontalAlignment(SwingConstants.CENTER);
-        logoPanel.add(logoLabel, BorderLayout.CENTER);
+        JLabel logoNama = new JLabel("Pemancingan");
+        logoNama.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        logoNama.setForeground(Color.WHITE);
+
+        JLabel logoSub = new JLabel("sistem admin");
+        logoSub.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        logoSub.setForeground(new Color(148, 163, 184));
+
+        JPanel logoTeks = new JPanel();
+        logoTeks.setLayout(new BoxLayout(logoTeks, BoxLayout.Y_AXIS));
+        logoTeks.setOpaque(false);
+        logoTeks.add(logoNama);
+        logoTeks.add(logoSub);
+
+        logoPanel.add(logoTeks, BorderLayout.CENTER);
+
+        // Garis pemisah bawah logo
+        JSeparator sep = new JSeparator();
+        sep.setForeground(new Color(30, 41, 59));
+        sep.setMaximumSize(new Dimension(190, 1));
 
         sidebarPanel.add(logoPanel);
-        sidebarPanel.add(Box.createVerticalStrut(10));
+        sidebarPanel.add(sep);
+        sidebarPanel.add(Box.createVerticalStrut(8));
 
-        // Menu Items
-        sidebarPanel.add(buatMenuButton("Monitor Lapak",   "LAPAK"));
-        sidebarPanel.add(buatMenuButton("Pelanggan",        "PELANGGAN"));
-        sidebarPanel.add(buatMenuButton("Riwayat Transaksi","TRANSAKSI"));
-        sidebarPanel.add(buatMenuButton("Laporan",          "LAPORAN"));
+        // Menu items dengan ikon
+        sidebarPanel.add(buatMenuButton("Monitor Lapak", "LAPAK"));
+        sidebarPanel.add(buatMenuButton("Pelanggan", "PELANGGAN"));
+        sidebarPanel.add(buatMenuButton("Transaksi", "TRANSAKSI"));
+        sidebarPanel.add(buatMenuButton("Laporan", "LAPORAN"));
 
-        // Spacer dorong tombol keluar ke bawah
         sidebarPanel.add(Box.createVerticalGlue());
 
-        // Tombol Keluar di bagian bawah sidebar
+        // Garis sebelum keluar
+        JSeparator sep2 = new JSeparator();
+        sep2.setForeground(new Color(30, 41, 59));
+        sep2.setMaximumSize(new Dimension(190, 1));
+        sidebarPanel.add(sep2);
+        sidebarPanel.add(Box.createVerticalStrut(4));
+
         JButton keluarBtn = buatMenuButton("Keluar", "KELUAR");
-        keluarBtn.setBackground(new Color(169, 50, 38));
+        keluarBtn.setForeground(new Color(248, 113, 113));
         sidebarPanel.add(keluarBtn);
-        sidebarPanel.add(Box.createVerticalStrut(10));
+        sidebarPanel.add(Box.createVerticalStrut(12));
 
         add(sidebarPanel, BorderLayout.WEST);
     }
 
     private JButton buatMenuButton(String teks, String panelKey) {
-        JButton btn = new JButton(teks);
-        btn.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        btn.setForeground(Color.WHITE);
+        JPanel wrapper = new JPanel(new BorderLayout());
+        wrapper.setOpaque(false);
+        wrapper.setBorder(BorderFactory.createEmptyBorder(10, 5, 10, 10));
+
+        JButton btn = new JButton();
+        btn.setLayout(new BorderLayout(10, 0));
+        btn.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        btn.setForeground(new Color(148, 163, 184)); // Selalu terlihat
         btn.setBackground(SIDEBAR_BG);
         btn.setFocusPainted(false);
         btn.setBorderPainted(false);
-        btn.setHorizontalAlignment(SwingConstants.LEFT);
-        btn.setBorder(BorderFactory.createEmptyBorder(12, 20, 12, 20));
-        btn.setMaximumSize(new Dimension(200, 50));
-        btn.setPreferredSize(new Dimension(200, 50));
+        btn.setOpaque(true);
+        btn.setBorder(BorderFactory.createEmptyBorder(10, 5, 10, 14));
+        btn.setMaximumSize(new Dimension(Integer.MAX_VALUE, 42));
+        btn.setPreferredSize(new Dimension(190, 42));
+        btn.setAlignmentX(Component.LEFT_ALIGNMENT);
         btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
 
-        // Efek hover
+
+        // Teks
+        JLabel lblTeks = new JLabel(teks);
+        lblTeks.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        lblTeks.setForeground(new Color(148, 163, 184));
+
+        btn.add(lblTeks, BorderLayout.CENTER);
+
+        // Hover
         btn.addMouseListener(new java.awt.event.MouseAdapter() {
             @Override
             public void mouseEntered(java.awt.event.MouseEvent e) {
                 if (!btn.getBackground().equals(SIDEBAR_AKTIF)) {
                     btn.setBackground(SIDEBAR_HOVER);
+                    lblTeks.setForeground(Color.WHITE);
                 }
             }
             @Override
             public void mouseExited(java.awt.event.MouseEvent e) {
                 if (!btn.getBackground().equals(SIDEBAR_AKTIF)) {
                     btn.setBackground(SIDEBAR_BG);
+                    lblTeks.setForeground(new Color(148, 163, 184));
                 }
             }
         });
@@ -124,6 +154,7 @@ public class DashboardView extends JFrame {
             } else {
                 resetWarnaSemuaTombol();
                 btn.setBackground(SIDEBAR_AKTIF);
+                lblTeks.setForeground(Color.WHITE);
                 tampilkanPanel(panelKey);
             }
         });
@@ -135,34 +166,33 @@ public class DashboardView extends JFrame {
         for (Component c : sidebarPanel.getComponents()) {
             if (c instanceof JButton) {
                 JButton btn = (JButton) c;
-                // Jangan reset tombol keluar
-                if (!btn.getBackground().equals(new Color(169, 50, 38))) {
+                // Cari label di dalam button
+                for (Component child : btn.getComponents()) {
+                    if (child instanceof JLabel) {
+                        ((JLabel) child).setForeground(new Color(148, 163, 184));
+                    }
+                }
+                if (!btn.getForeground().equals(new Color(248, 113, 113))) {
                     btn.setBackground(SIDEBAR_BG);
                 }
             }
         }
     }
 
-    // =========================================================
-    // CONTENT AREA (CardLayout)
-    // =========================================================
-
     private void initContent() {
         cardLayout = new CardLayout();
         contentPanel = new JPanel(cardLayout);
         contentPanel.setBackground(CONTENT_BG);
 
-        // Panel Lapak
         lapakPanel = new LapakPanel();
         contentPanel.add(lapakPanel, "LAPAK");
 
         PelangganPanel pelangganPanel = new PelangganPanel();
         contentPanel.add(pelangganPanel, "PELANGGAN");
-        
+
         RiwayatTransaksiPanel riwayatPanel = new RiwayatTransaksiPanel();
         contentPanel.add(riwayatPanel, "TRANSAKSI");
 
-        // Panel Laporan (placeholder)
         contentPanel.add(buatPlaceholder("Laporan & Statistik\n(Segera Hadir)"), "LAPORAN");
 
         add(contentPanel, BorderLayout.CENTER);
@@ -176,29 +206,19 @@ public class DashboardView extends JFrame {
                 pesan.replace("\n", "<br>") +
                 "</center></html>");
         label.setFont(new Font("Segoe UI", Font.PLAIN, 18));
-        label.setForeground(new Color(150, 150, 150));
+        label.setForeground(new Color(100, 116, 139));
         label.setHorizontalAlignment(SwingConstants.CENTER);
 
         panel.add(label);
         return panel;
     }
 
-    // =========================================================
-    // NAVIGASI
-    // =========================================================
-
     private void tampilkanPanel(String key) {
         cardLayout.show(contentPanel, key);
-
-        // Refresh LapakPanel setiap kali ditampilkan
         if (key.equals("LAPAK") && lapakPanel != null) {
             lapakPanel.refresh();
         }
     }
-
-    // =========================================================
-    // KONFIRMASI KELUAR
-    // =========================================================
 
     private void konfirmasiKeluar() {
         int pilihan = JOptionPane.showConfirmDialog(

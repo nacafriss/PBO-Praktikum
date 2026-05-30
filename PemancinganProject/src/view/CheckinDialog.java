@@ -105,8 +105,12 @@ public class CheckinDialog extends JDialog {
     private JPanel buatSectionPelanggan() {
         JPanel section = new JPanel();
         section.setLayout(new BoxLayout(section, BoxLayout.Y_AXIS));
-        section.setBackground(BG_PANEL);
-        section.setBorder(buatTitledBorder("Data Pelanggan"));
+        section.setBackground(Color.WHITE);
+        section.setOpaque(true);
+        section.setBorder(BorderFactory.createCompoundBorder(
+                buatTitledBorder("Data Pelanggan"),
+                BorderFactory.createEmptyBorder(10,10,10,10)
+        ));
 
         // Nama
         txtNama = new JTextField();
@@ -151,8 +155,12 @@ public class CheckinDialog extends JDialog {
     private JPanel buatSectionSesi() {
         JPanel section = new JPanel();
         section.setLayout(new BoxLayout(section, BoxLayout.Y_AXIS));
-        section.setBackground(BG_PANEL);
-        section.setBorder(buatTitledBorder("Detail Sesi"));
+        section.setBackground(Color.WHITE);
+        section.setOpaque(true);
+        section.setBorder(BorderFactory.createCompoundBorder(
+                buatTitledBorder("Detail Sesi"),
+                BorderFactory.createEmptyBorder(10,10,10,10)
+        ));
 
         // Pilih posisi
         cmbPosisi = new JComboBox<>();
@@ -195,6 +203,12 @@ public class CheckinDialog extends JDialog {
                 1, 0, 0, 0, new Color(220, 220, 220)));
 
         btnBatal = new JButton("Batal");
+        btnBatal.setBackground(new Color(236,240,241));
+        btnBatal.setForeground(new Color(52,73,94));
+        btnBatal.setBorder(BorderFactory.createLineBorder(
+                new Color(189,195,199)
+        ));
+        btnBatal.setOpaque(true);
         btnBatal.setFont(new Font("Segoe UI", Font.PLAIN, 13));
         btnBatal.setPreferredSize(new Dimension(90, 34));
         btnBatal.setFocusPainted(false);
@@ -202,8 +216,9 @@ public class CheckinDialog extends JDialog {
 
         btnCheckin = new JButton("Check-in");
         btnCheckin.setFont(new Font("Segoe UI", Font.BOLD, 13));
-        btnCheckin.setBackground(HIJAU);
+        btnCheckin.setBackground(new Color(34,197,94));
         btnCheckin.setForeground(Color.WHITE);
+        btnCheckin.setOpaque(true);
         btnCheckin.setFocusPainted(false);
         btnCheckin.setBorderPainted(false);
         btnCheckin.setPreferredSize(new Dimension(110, 34));
@@ -224,14 +239,24 @@ public class CheckinDialog extends JDialog {
         JPanel row = new JPanel(new BorderLayout(0, 4));
         row.setBackground(BG_PANEL);
         row.setBorder(BorderFactory.createEmptyBorder(4, 8, 4, 8));
+        field.setPreferredSize(new Dimension(0, 36));
 
         JLabel label = new JLabel(labelTeks);
         label.setFont(new Font("Segoe UI", Font.PLAIN, 12));
         label.setForeground(new Color(80, 80, 80));
 
-        if (field instanceof JTextField) {
-            ((JTextField) field).setFont(new Font("Segoe UI", Font.PLAIN, 13));
-            ((JTextField) field).setPreferredSize(new Dimension(0, 30));
+        if (field instanceof JTextField txt) {
+        txt.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        txt.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(210,210,210)),
+                BorderFactory.createEmptyBorder(5,10,5,10)
+        ));
+        txt.setPreferredSize(new Dimension(0,36));
+        }
+        
+        if (field instanceof JComboBox<?> combo) {
+        combo.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        combo.setPreferredSize(new Dimension(0,36));
         }
 
         row.add(label, BorderLayout.NORTH);
@@ -242,8 +267,13 @@ public class CheckinDialog extends JDialog {
 
     private TitledBorder buatTitledBorder(String judul) {
         TitledBorder border = BorderFactory.createTitledBorder(
-                BorderFactory.createLineBorder(new Color(200, 200, 200)), judul);
-        border.setTitleFont(new Font("Segoe UI", Font.BOLD, 12));
+                BorderFactory.createLineBorder(new Color(220,220,220),1),
+                judul
+        );
+
+        border.setTitleFont(new Font("Segoe UI", Font.BOLD, 13));
+        border.setTitleColor(BIRU_TUA);
+
         return border;
     }
 

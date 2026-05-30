@@ -104,7 +104,7 @@ public class CheckoutDialog extends JDialog {
         initUI();
         muatListPelanggan();
         pack();
-        setMinimumSize(new Dimension(680, 620));
+        setMinimumSize(new Dimension(900, 700));
         setLocationRelativeTo(parent);
         setResizable(true);
     }
@@ -226,7 +226,8 @@ public class CheckoutDialog extends JDialog {
 
     private JPanel buatSectionInfo() {
         JPanel section = new JPanel(new GridLayout(3, 2, 6, 4));
-        section.setBackground(BG_PANEL);
+        section.setBackground(Color.WHITE);
+        section.setOpaque(true);
         section.setBorder(buatTitledBorder("Info Sesi"));
 
         lblNama    = new JLabel("—");
@@ -395,7 +396,7 @@ public class CheckoutDialog extends JDialog {
         btnHitung.addActionListener(e -> hitungPreview());
 
         // Struk teks
-        txtStruk = new JTextArea(5, 0);
+        txtStruk = new JTextArea(8, 0);
         txtStruk.setFont(new Font("Consolas", Font.PLAIN, 11));
         txtStruk.setEditable(false);
         txtStruk.setBackground(new Color(250, 250, 250));
@@ -403,7 +404,7 @@ public class CheckoutDialog extends JDialog {
         txtStruk.setText("Pilih pelanggan dan klik Hitung Tagihan...");
 
         JScrollPane scrollStruk = new JScrollPane(txtStruk);
-        scrollStruk.setPreferredSize(new Dimension(0, 110));
+        scrollStruk.setPreferredSize(new Dimension(0, 180));
         scrollStruk.setBorder(BorderFactory.createLineBorder(new Color(220, 220, 220)));
 
         // Total tagihan
@@ -445,15 +446,20 @@ public class CheckoutDialog extends JDialog {
 
         btnBatal = new JButton("Batal");
         btnBatal.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        btnBatal.setBackground(new Color(240,240,240));
+        btnBatal.setForeground(new Color(60,60,60));
+        btnBatal.setOpaque(true);
+        btnBatal.setBorder(BorderFactory.createLineBorder(new Color(200,200,200)));
         btnBatal.setPreferredSize(new Dimension(90, 34));
         btnBatal.setFocusPainted(false);
         //btnBatal.addActionListener(e -> batalkanTransaksi());
         btnBatal.addActionListener(e -> dispose());
 
-        btnCheckout = new JButton("✔ Checkout");
+        btnCheckout = new JButton("Checkout");
         btnCheckout.setFont(new Font("Segoe UI", Font.BOLD, 13));
-        btnCheckout.setBackground(MERAH);
+        btnCheckout.setBackground(new Color(220, 38, 38));
         btnCheckout.setForeground(Color.WHITE);
+        btnBatal.setOpaque(true);
         btnCheckout.setFocusPainted(false);
         btnCheckout.setBorderPainted(false);
         btnCheckout.setPreferredSize(new Dimension(110, 34));
@@ -783,7 +789,17 @@ public class CheckoutDialog extends JDialog {
         public Component getListCellRendererComponent(JList<?> list, Object value,
                 int index, boolean selected, boolean cellHasFocus) {
             JPanel row = new JPanel(new BorderLayout(6, 0));
-            row.setBorder(BorderFactory.createEmptyBorder(6, 10, 6, 10));
+            row.setBorder(
+            BorderFactory.createCompoundBorder(
+                    BorderFactory.createMatteBorder(
+                            0,0,1,0,
+                            new Color(235,235,235)
+                    ),
+                    BorderFactory.createEmptyBorder(
+                            8,10,8,10
+                    )
+                )
+            );
 
             // Nomor posisi
             String teks = String.valueOf(value);
