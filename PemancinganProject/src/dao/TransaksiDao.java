@@ -323,6 +323,21 @@ public class TransaksiDao implements TransaksiDaoInterface {
         List<Integer> terpakai = getPosisiTerpakaiByLapakId(lapakId);
         return terpakai.size() < kapasitas;
     }
+    
+    public void deleteByLapakId(int lapakId) {
+        String query = "DELETE FROM transaksi WHERE lapak_id = ?";
+
+        try (Connection conn = DBConnection.Connect()) {
+            if (conn == null) return;
+            try (PreparedStatement stmt = conn.prepareStatement(query)) {
+                stmt.setInt(1, lapakId);
+                stmt.executeUpdate();
+                System.out.println("Transaksi lapak " + lapakId + " dihapus.");
+            }
+        } catch (SQLException e) {
+            System.err.println("deleteByLapakId gagal: " + e.getMessage());
+        }
+    }
 
     // =========================================================
     // PRIVATE HELPER

@@ -125,7 +125,7 @@ public class CheckinDialog extends JDialog {
                 cekMember();
             }
         });
-        section.add(buatFieldRow("No. HP", txtNoHp));
+        section.add(buatFieldRow("No. HP *", txtNoHp));
         section.add(Box.createVerticalStrut(4));
 
         // Info member
@@ -317,6 +317,8 @@ public class CheckinDialog extends JDialog {
         String noHp = txtNoHp.getText().trim();
         if (!ValidatorUtil.isNomorHpValid(noHp)) {
             lblInfoMember.setText(" ");
+            txtNama.setEditable(true);
+            txtNama.setBackground(Color.WHITE);
             return;
         }
 
@@ -356,7 +358,12 @@ public class CheckinDialog extends JDialog {
             txtNama.requestFocus();
             return;
         }
-
+        //validasi no hp wajib isi
+        if (!ValidatorUtil.isNotNullOrEmpty(noHp)) {
+            tampilkanError("Nomor HP wajib diisi!");
+            txtNoHp.requestFocus();
+            return;
+        }
         // Validasi no HP jika diisi
         if (ValidatorUtil.isNotNullOrEmpty(noHp) && !ValidatorUtil.isNomorHpValid(noHp)) {
             tampilkanError("Format nomor HP tidak valid!");

@@ -78,6 +78,9 @@ public class CheckoutDialog extends JDialog {
     private JTextField txtNamaIkan;
     private JTextField txtBeratIkan;
     private JTextField txtHargaPerKg;
+    // Tambah di deklarasi variabel
+    private JComboBox<model.JenisIkan> cmbJenisIkan;
+    private List<model.JenisIkan> listJenisIkan = new ArrayList<>();
 
     // Struk & total
     private JTextArea txtStruk;
@@ -104,7 +107,7 @@ public class CheckoutDialog extends JDialog {
         initUI();
         muatListPelanggan();
         pack();
-        setMinimumSize(new Dimension(900, 700));
+        setMinimumSize(new Dimension(800, 600));
         setLocationRelativeTo(parent);
         setResizable(true);
     }
@@ -284,18 +287,70 @@ public class CheckoutDialog extends JDialog {
         section.setBackground(BG_PANEL);
         section.setBorder(buatTitledBorder("Detail Tangkapan Ikan"));
 
+        // Load jenis ikan dari DB
+        listJenisIkan = new dao.JenisIkanDao().getAllAktif();
+
         // Form tambah baris
         JPanel formTambah = new JPanel(new GridLayout(1, 4, 6, 0));
         formTambah.setBackground(BG_PANEL);
         formTambah.setBorder(BorderFactory.createEmptyBorder(4, 4, 4, 4));
 
-        txtNamaIkan  = new JTextField();
-        txtBeratIkan = new JTextField();
+        // ComboBox jenis ikan — auto-fill harga saat dipilih
+        cmbJenisIkan = new JComboBox<>();
+        for (model.JenisIkan ikan : listJenisIkan) {
+            cmbJenisIkan.addItem(ikan);
+        }
+        // Tambah opsi "Lainnya" untuk input manual
+        cmbJenisIkan.addItem(null); // null = lainnya
+        cmbJenisIkan.setRenderer(new DefaultListCellRenderer() {
+            @Override
+            public Component getListCellRendererComponent(JList<?> list, Object value,
+                    int index, boolean selected, boolean focus) {
+                super.getListCellRendererComponent(list, value, index, selected, focus);
+                if (value == null) {
+                    setText("— Lainnya (input manual) —");
+                } else {
+                    model.JenisIkan ikan = (model.JenisIkan) value;
+                    setText(ikan.getNamaIkan() + "  —  "
+                            + utils.FormatterUtil.formatRupiah(ikan.getHargaPerKg()) + "/kg");
+                }
+                return this;
+            }
+        });
+
+        // Auto-fill harga saat pilih jenis ikan
+        cmbJenisIkan.addActionListener(e -> {
+            Object selected = cmbJenisIkan.getSelectedItem();
+            if (selected instanceof model.JenisIkan) {
+                model.JenisIkan ikan = (model.JenisIkan) selected;
+                txtNamaIkan.setText(ikan.getNamaIkan());
+                if (ikan.getHargaPerKg() != null) {
+                    txtHargaPerKg.setText(ikan.getHargaPerKg().toPlainString());
+                }
+                txtNamaIkan.setEditable(false); // Kunci nama jika dari DB
+                txtHargaPerKg.setEditable(false); // Kunci harga jika dari DB
+            } else {
+                // Lainnya — buka input manual
+                txtNamaIkan.setText("");
+                txtHargaPerKg.setText("");
+                txtNamaIkan.setEditable(true);
+                txtHargaPerKg.setEditable(true);
+            }
+        });
+
+        txtBeratIkan  = new JTextField();
+        txtNamaIkan   = new JTextField();
         txtHargaPerKg = new JTextField();
 
-        txtNamaIkan.setToolTipText("Nama ikan (contoh: Lele, Mas, Nila)");
+        txtNamaIkan.setEditable(false);
+        txtHargaPerKg.setEditable(false);
+
         txtBeratIkan.setToolTipText("Berat dalam kg (contoh: 1.5)");
-        txtHargaPerKg.setToolTipText("Harga per kg");
+
+        // Trigger auto-fill saat dialog dibuka jika ada item
+        if (!listJenisIkan.isEmpty()) {
+            cmbJenisIkan.setSelectedIndex(0);
+        }
 
         JButton btnTambah = new JButton("+ Tambah");
         btnTambah.setFont(new Font("Segoe UI", Font.BOLD, 12));
@@ -306,34 +361,27 @@ public class CheckoutDialog extends JDialog {
         btnTambah.setCursor(new Cursor(Cursor.HAND_CURSOR));
         btnTambah.addActionListener(e -> tambahBarisTangkapan());
 
-        JLabel lblHint1 = new JLabel("Nama Ikan");
-        lblHint1.setFont(new Font("Segoe UI", Font.PLAIN, 11));
-        JLabel lblHint2 = new JLabel("Berat (kg)");
-        lblHint2.setFont(new Font("Segoe UI", Font.PLAIN, 11));
-        JLabel lblHint3 = new JLabel("Harga/kg");
-        lblHint3.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        // Layout kolom form
+        JPanel colIkan  = buatKolomInput(new JLabel("Jenis Ikan"), cmbJenisIkan);
+        JPanel colBerat = buatKolomInput(new JLabel("Berat (kg)"), txtBeratIkan);
+        JPanel colHarga = buatKolomInput(new JLabel("Harga/kg"), txtHargaPerKg);
 
-        // Label + field per kolom
-        JPanel col1 = buatKolomInput(lblHint1, txtNamaIkan);
-        JPanel col2 = buatKolomInput(lblHint2, txtBeratIkan);
-        JPanel col3 = buatKolomInput(lblHint3, txtHargaPerKg);
+        JPanel colTambah = new JPanel(new BorderLayout());
+        colTambah.setOpaque(false);
+        colTambah.setBorder(BorderFactory.createEmptyBorder(16, 0, 0, 0));
+        colTambah.add(btnTambah, BorderLayout.CENTER);
 
-        JPanel col4 = new JPanel(new BorderLayout());
-        col4.setOpaque(false);
-        col4.setBorder(BorderFactory.createEmptyBorder(14, 0, 0, 0));
-        col4.add(btnTambah, BorderLayout.CENTER);
+        formTambah.add(colIkan);
+        formTambah.add(colBerat);
+        formTambah.add(colHarga);
+        formTambah.add(colTambah);
 
-        formTambah.add(col1);
-        formTambah.add(col2);
-        formTambah.add(col3);
-        formTambah.add(col4);
-
-        // Tabel tangkapan
-        String[] kolom = {"Nama Ikan", "Berat (kg)", "Harga/kg", "Subtotal", ""};
+        // Tabel tangkapan — tambah kolom tersembunyi untuk simpan harga raw
+        String[] kolom = {"Nama Ikan", "Berat (kg)", "Harga/kg", "Subtotal", "", "harga_raw"};
         modelTabelTangkapan = new DefaultTableModel(kolom, 0) {
             @Override
             public boolean isCellEditable(int row, int col) {
-                return col == 4; // Hanya kolom hapus
+                return col == 4;
             }
         };
 
@@ -343,20 +391,22 @@ public class CheckoutDialog extends JDialog {
         tabelTangkapan.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 11));
         tabelTangkapan.getTableHeader().setBackground(new Color(235, 241, 245));
 
-        // Lebar kolom
-        int[] lebar = {110, 80, 90, 100, 40};
+        // Sembunyikan kolom harga_raw
+        tabelTangkapan.getColumnModel().getColumn(5).setMinWidth(0);
+        tabelTangkapan.getColumnModel().getColumn(5).setMaxWidth(0);
+        tabelTangkapan.getColumnModel().getColumn(5).setWidth(0);
+
+        int[] lebar = {120, 80, 100, 100, 40};
         for (int i = 0; i < lebar.length; i++) {
             tabelTangkapan.getColumnModel().getColumn(i).setPreferredWidth(lebar[i]);
         }
 
-        // Tombol hapus di kolom terakhir
-        tabelTangkapan.getColumnModel().getColumn(4)
-                .setCellRenderer(new HapusRenderer());
-        tabelTangkapan.getColumnModel().getColumn(4)
-                .setCellEditor(new HapusEditor(new JCheckBox(), this));
+        tabelTangkapan.getColumnModel().getColumn(4).setCellRenderer(new HapusRenderer());
+        tabelTangkapan.getColumnModel().getColumn(4).setCellEditor(
+                new HapusEditor(new JCheckBox(), this));
 
         JScrollPane scrollTabel = new JScrollPane(tabelTangkapan);
-        scrollTabel.setPreferredSize(new Dimension(0, 120));
+        scrollTabel.setPreferredSize(new Dimension(0, 130));
         scrollTabel.setBorder(BorderFactory.createLineBorder(new Color(220, 220, 220)));
 
         section.add(formTambah, BorderLayout.NORTH);
@@ -365,7 +415,7 @@ public class CheckoutDialog extends JDialog {
         return section;
     }
 
-    private JPanel buatKolomInput(JLabel label, JTextField field) {
+    private JPanel buatKolomInput(JLabel label, JComponent field) {
         JPanel col = new JPanel(new BorderLayout(0, 3));
         col.setOpaque(false);
         label.setFont(new Font("Segoe UI", Font.PLAIN, 11));
@@ -567,9 +617,9 @@ public class CheckoutDialog extends JDialog {
      * Tambah baris tangkapan ke tabel (untuk kolam KILOAN).
      */
     private void tambahBarisTangkapan() {
-        String namaIkan   = txtNamaIkan.getText().trim();
-        String beratStr   = txtBeratIkan.getText().trim();
-        String hargaStr   = txtHargaPerKg.getText().trim();
+        String namaIkan = txtNamaIkan.getText().trim();
+        String beratStr = txtBeratIkan.getText().trim();
+        String hargaStr = txtHargaPerKg.getText().trim();
 
         if (!ValidatorUtil.isNotNullOrEmpty(namaIkan)) {
             tampilkanError("Nama ikan tidak boleh kosong!");
@@ -594,21 +644,21 @@ public class CheckoutDialog extends JDialog {
 
         BigDecimal subtotal = berat.multiply(harga);
 
+        // Kolom ke-5 (index 5) simpan harga raw BigDecimal
         modelTabelTangkapan.addRow(new Object[]{
             namaIkan,
             beratStr,
             FormatterUtil.formatRupiah(harga),
             FormatterUtil.formatRupiah(subtotal),
-            "🗑"
+            "🗑",
+            harga  // hidden column — harga raw
         });
 
-        // Reset form input
-        txtNamaIkan.setText("");
+        // Reset form
         txtBeratIkan.setText("");
-        txtHargaPerKg.setText("");
-        txtNamaIkan.requestFocus();
+        // Jangan reset nama & harga — biarkan ComboBox yang kontrol
 
-        // Reset hitung
+        txtBeratIkan.requestFocus();
         btnCheckout.setEnabled(false);
         btnHitung.setEnabled(true);
     }
@@ -697,13 +747,11 @@ public class CheckoutDialog extends JDialog {
             String namaIkan = (String) modelTabelTangkapan.getValueAt(i, 0);
             String beratStr = (String) modelTabelTangkapan.getValueAt(i, 1);
 
-            // Ambil harga raw dari kolom tersembunyi (index 5 jika ada)
+            // Ambil harga raw dari kolom tersembunyi index 5
             BigDecimal harga = BigDecimal.ZERO;
-            if (modelTabelTangkapan.getColumnCount() > 5) {
-                Object rawHarga = modelTabelTangkapan.getValueAt(i, 5);
-                if (rawHarga instanceof BigDecimal) {
-                    harga = (BigDecimal) rawHarga;
-                }
+            Object rawHarga = modelTabelTangkapan.getValueAt(i, 5);
+            if (rawHarga instanceof BigDecimal) {
+                harga = (BigDecimal) rawHarga;
             }
 
             DetailTangkapan detail = new DetailTangkapan();
@@ -836,7 +884,7 @@ public class CheckoutDialog extends JDialog {
         @Override
         public Component getTableCellRendererComponent(JTable table, Object value,
                 boolean selected, boolean focus, int row, int col) {
-            JButton btn = new JButton("🗑");
+            JButton btn = new JButton("Hapus");
             btn.setFont(new Font("Segoe UI", Font.PLAIN, 13));
             btn.setBackground(new Color(252, 235, 235));
             btn.setForeground(MERAH);
@@ -861,7 +909,7 @@ public class CheckoutDialog extends JDialog {
         public Component getTableCellEditorComponent(JTable table, Object value,
                 boolean selected, int row, int col) {
             barisTerpilih = row;
-            JButton btn = new JButton("🗑");
+            JButton btn = new JButton("Hapus");
             btn.setFont(new Font("Segoe UI", Font.PLAIN, 13));
             btn.setBackground(new Color(252, 235, 235));
             btn.setForeground(MERAH);
@@ -875,6 +923,6 @@ public class CheckoutDialog extends JDialog {
         }
 
         @Override
-        public Object getCellEditorValue() { return "🗑"; }
+        public Object getCellEditorValue() { return "Hapus"; }
     }
 }

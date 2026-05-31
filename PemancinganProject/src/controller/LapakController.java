@@ -139,13 +139,13 @@ public class LapakController {
         if (ValidatorUtil.isNotNullOrEmpty(noHp)) {
             Pelanggan pelanggan = cariPelangganByNoHp(noHp);
             if (pelanggan != null) {
-                // Update data pelanggan yang sudah ada
-                pelanggan.setNama(namaPelanggan.trim());
+                // Pelanggan sudah ada — JANGAN update nama
+                // Hanya update total kunjungan
                 pelanggan.setTotalKunjungan(pelanggan.getTotalKunjungan() + 1);
                 pelangganDao.update(pelanggan);
                 pelangganId = pelanggan.getId();
             } else {
-                // Daftarkan pelanggan baru otomatis
+                // Pelanggan baru — daftarkan
                 Pelanggan pelangganBaru = new Pelanggan();
                 pelangganBaru.setNama(namaPelanggan.trim());
                 pelangganBaru.setNoHp(noHp.trim());
@@ -154,11 +154,10 @@ public class LapakController {
                 pelangganBaru.setTipeMember("UMUM");
                 pelangganBaru.setPoin(0);
                 pelangganBaru.setTotalKunjungan(1);
-                pelangganBaru.setTotalBelanja(BigDecimal.ZERO);
+                pelangganBaru.setTotalBelanja(java.math.BigDecimal.ZERO);
                 pelangganBaru.setAktif(true);
                 pelangganDao.insert(pelangganBaru);
 
-                // Ambil ID pelanggan yang baru didaftarkan
                 Pelanggan tersimpan = cariPelangganByNoHp(noHp.trim());
                 if (tersimpan != null) pelangganId = tersimpan.getId();
             }

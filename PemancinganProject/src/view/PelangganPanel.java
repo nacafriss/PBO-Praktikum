@@ -69,13 +69,14 @@ public class PelangganPanel extends JPanel {
             "Tipe Member",
             "Poin",
             "Total Kunjungan",
-            "Total Belanja"
+            "Total Belanja",
+            "Aksi"
         };
 
         tableModel = new DefaultTableModel(namaKolom, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
-                return false;
+                return column == 9;
             }
         };
 
@@ -107,6 +108,11 @@ public class PelangganPanel extends JPanel {
         tabelPelanggan.getColumnModel().getColumn(0).setMinWidth(0);
         tabelPelanggan.getColumnModel().getColumn(0).setMaxWidth(0);
         tabelPelanggan.getColumnModel().getColumn(0).setPreferredWidth(0);
+        
+        //hapus pelanggan
+        tabelPelanggan.getColumnModel().getColumn(9).setPreferredWidth(80);
+        tabelPelanggan.getColumnModel().getColumn(9).setCellRenderer(new TombolHapusRenderer());
+        tabelPelanggan.getColumnModel().getColumn(9).setCellEditor(new TombolHapusEditor(new JCheckBox(), this));
 
         JScrollPane scrollPane = new JScrollPane(tabelPelanggan);
         scrollPane.setBorder(null);
@@ -131,7 +137,7 @@ public class PelangganPanel extends JPanel {
         // FOOTER
         // =====================================================
 
-        JButton btnRefresh = new JButton("↻ Refresh Data");
+        JButton btnRefresh = new JButton("Refresh Data");
 
         btnRefresh.setFont(new Font("Segoe UI", Font.BOLD, 13));
 
@@ -187,7 +193,8 @@ public class PelangganPanel extends JPanel {
                 p.getPoin(),
                 p.getTotalKunjungan(),
                 FormatterUtil.formatRupiah(
-                        p.getTotalBelanja())
+                        p.getTotalBelanja()),
+                "Hapus"
             };
 
             tableModel.addRow(baris);
@@ -195,5 +202,85 @@ public class PelangganPanel extends JPanel {
 
         lblJumlah.setText(
                 list.size() + " pelanggan");
+    }
+    
+    // =====================================================
+    // METHOD HAPUS
+    // =====================================================
+
+    public void hapusPelanggan(int baris) {
+        // Ambil ID dari kolom tersembunyi index 0
+        int id = (int) tableModel.getValueAt(baris, 0);
+        String nama = (String) tableModel.getValueAt(baris, 1);
+
+        int konfirmasi = JOptionPane.showConfirmDialog(
+                this,
+                "Hapus pelanggan \"" + nama + "\"?\n"
+                        + "Data tidak bisa dikembalikan!",
+                "Konfirmasi Hapus",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.WARNING_MESSAGE
+        );
+
+        if (konfirmasi == JOptionPane.YES_OPTION) {
+            new PelangganDao().delete(id);
+            muatDataPelanggan();
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Pelanggan \"" + nama + "\" berhasil dihapus.",
+                    "Berhasil",
+                    JOptionPane.INFORMATION_MESSAGE
+            );
+        }
+    }
+
+    // =====================================================
+    // INNER CLASS RENDERER & EDITOR
+    // =====================================================
+
+    static class TombolHapusRenderer extends javax.swing.table.DefaultTableCellRenderer {
+        @Override
+        public Component getTableCellRendererComponent(JTable table, Object value,
+                boolean selected, boolean focus, int row, int col) {
+            JButton btn = new JButton("Hapus");
+            btn.setFont(new Font("Segoe UI", Font.BOLD, 11));
+            btn.setBackground(new Color(254, 226, 226));
+            btn.setForeground(new Color(185, 28, 28));
+            btn.setFocusPainted(false);
+            btn.setBorderPainted(false);
+            btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+            return btn;
+        }
+    }
+
+    static class TombolHapusEditor extends DefaultCellEditor {
+        private final PelangganPanel panel;
+        private int barisTerpilih;
+
+        TombolHapusEditor(JCheckBox cb, PelangganPanel panel) {
+            super(cb);
+            this.panel = panel;
+        }
+
+        @Override
+        public Component getTableCellEditorComponent(JTable table, Object value,
+                boolean selected, int row, int col) {
+            barisTerpilih = row;
+            JButton btn = new JButton("Hapus");
+            btn.setFont(new Font("Segoe UI", Font.BOLD, 11));
+            btn.setBackground(new Color(254, 226, 226));
+            btn.setForeground(new Color(185, 28, 28));
+            btn.setFocusPainted(false);
+            btn.setBorderPainted(false);
+            btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+            btn.addActionListener(e -> {
+                fireEditingStopped();
+                panel.hapusPelanggan(barisTerpilih);
+            });
+            return btn;
+        }
+
+        @Override
+        public Object getCellEditorValue() { return "Hapus"; }
     }
 }

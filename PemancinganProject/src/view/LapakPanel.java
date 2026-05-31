@@ -95,12 +95,10 @@ public class LapakPanel extends JPanel implements LapakTimerThread.LapakTimerLis
         panel.setBackground(BIRU_TUA);
         panel.setBorder(BorderFactory.createEmptyBorder(10, 16, 0, 16));
 
-        // Judul
         JLabel title = new JLabel("Monitor Lapak");
         title.setFont(new Font("Segoe UI", Font.BOLD, 18));
         title.setForeground(Color.WHITE);
 
-        // Tab buttons
         JPanel tabPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         tabPanel.setOpaque(false);
 
@@ -113,7 +111,20 @@ public class LapakPanel extends JPanel implements LapakTimerThread.LapakTimerLis
         tabPanel.add(btnTabKartu);
         tabPanel.add(btnTabAktif);
 
-        // Refresh
+        JPanel kanan = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 8));
+        kanan.setOpaque(false);
+
+        // TAMBAH LAPAK
+        JButton btnTambah = new JButton("+ Lapak");
+        btnTambah.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        btnTambah.setBackground(HIJAU);
+        btnTambah.setForeground(Color.WHITE);
+        btnTambah.setFocusPainted(false);
+        btnTambah.setBorderPainted(false);
+        btnTambah.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btnTambah.addActionListener(e -> bukaFormTambahLapak());
+
+        // REFRESH
         JButton btnRefresh = new JButton("Refresh");
         btnRefresh.setFont(new Font("Segoe UI", Font.PLAIN, 12));
         btnRefresh.setBackground(new Color(52, 152, 219));
@@ -123,8 +134,7 @@ public class LapakPanel extends JPanel implements LapakTimerThread.LapakTimerLis
         btnRefresh.setCursor(new Cursor(Cursor.HAND_CURSOR));
         btnRefresh.addActionListener(e -> refresh());
 
-        JPanel kanan = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 8));
-        kanan.setOpaque(false);
+        kanan.add(btnTambah);
         kanan.add(btnRefresh);
 
         panel.add(title, BorderLayout.WEST);
@@ -532,13 +542,19 @@ public class LapakPanel extends JPanel implements LapakTimerThread.LapakTimerLis
         boolean adaAktif    = !aktifList.isEmpty();
 
         if (!lapak.isAktif()) {
-            JLabel lbl = new JLabel("Nonaktif");
-            lbl.setFont(new Font("Segoe UI", Font.ITALIC, 11));
-            lbl.setForeground(Color.GRAY);
-            footer.add(lbl);
+            // Lapak nonaktif — hanya tampil tombol aktifkan
+            JButton btnAktifkan = buatTombolKecil("Aktifkan", new Color(100, 100, 100));
+            btnAktifkan.addActionListener(e -> {
+                String hasil = lapakController.toggleAktifLapak(lapak);
+                JOptionPane.showMessageDialog(this, hasil, "Info",
+                        JOptionPane.INFORMATION_MESSAGE);
+                refresh();
+            });
+            footer.add(btnAktifkan);
             return footer;
         }
 
+        // Lapak aktif — tampil tombol sesuai kondisi
         if (bisaCheckin) {
             JButton btnCI = buatTombolKecil("+ Check-in", HIJAU);
             btnCI.addActionListener(e -> bukaCheckinDialog(lapak));
@@ -551,6 +567,29 @@ public class LapakPanel extends JPanel implements LapakTimerThread.LapakTimerLis
             footer.add(btnCO);
         }
 
+        // Tombol nonaktifkan — hanya muncul jika lapak kosong
+        if (!adaAktif) {
+            JButton btnNonaktif = buatTombolKecil("Nonaktifkan", new Color(100, 100, 100));
+            btnNonaktif.addActionListener(e -> {
+                int konfirmasi = JOptionPane.showConfirmDialog(this,
+                        "Nonaktifkan lapak " + lapak.getNamaLapak() + "?",
+                        "Konfirmasi",
+                        JOptionPane.YES_NO_OPTION);
+                if (konfirmasi == JOptionPane.YES_OPTION) {
+                    String hasil = lapakController.toggleAktifLapak(lapak);
+                    JOptionPane.showMessageDialog(this, hasil, "Info",
+                            JOptionPane.INFORMATION_MESSAGE);
+                    refresh();
+                }
+            });
+            footer.add(btnNonaktif);
+        }
+        
+        if (!adaAktif) {
+            JButton btnHapus = buatTombolKecil("Hapus", MERAH);
+            btnHapus.addActionListener(e -> hapusLapak(lapak));
+            footer.add(btnHapus);
+        }
         return footer;
     }
 
@@ -628,6 +667,96 @@ public class LapakPanel extends JPanel implements LapakTimerThread.LapakTimerLis
         dialog.setVisible(true);
 
         if (dialog.isCheckoutBerhasil()) {
+            refresh();
+        }
+    }
+    
+    // form tambah lapak
+    private void bukaFormTambahLapak() {
+        // Form input tambah lapak
+        JTextField txtNama      = new JTextField(15);
+        JComboBox<String> cmbJenis = new JComboBox<>(
+                new String[]{"HARIAN", "KILOAN", "GALATAMA"});
+        JTextField txtDeskripsi = new JTextField(15);
+        JSpinner spnKapasitas   = new JSpinner(
+                new SpinnerNumberModel(1, 1, 50, 1));
+        JComboBox<String> cmbTarif = new JComboBox<>();
+
+        // Load tarif dari DB
+        List<model.Tarif> listTarif = new dao.TarifDao().getAll();
+        int[] tarifIds = new int[listTarif.size()];
+        for (int i = 0; i < listTarif.size(); i++) {
+            model.Tarif t = listTarif.get(i);
+            cmbTarif.addItem(t.getNamaTarif() + " [" + t.getJenisKolam() + "]");
+            tarifIds[i] = t.getId();
+        }
+
+        JPanel formPanel = new JPanel(new java.awt.GridLayout(0, 2, 8, 8));
+        formPanel.add(new JLabel("Nama Lapak *"));
+        formPanel.add(txtNama);
+        formPanel.add(new JLabel("Jenis Kolam *"));
+        formPanel.add(cmbJenis);
+        formPanel.add(new JLabel("Tarif"));
+        formPanel.add(cmbTarif);
+        formPanel.add(new JLabel("Deskripsi"));
+        formPanel.add(txtDeskripsi);
+        formPanel.add(new JLabel("Kapasitas *"));
+        formPanel.add(spnKapasitas);
+
+        int hasil = JOptionPane.showConfirmDialog(this,
+                formPanel, "Tambah Lapak Baru",
+                JOptionPane.OK_CANCEL_OPTION,
+                JOptionPane.PLAIN_MESSAGE);
+
+        if (hasil == JOptionPane.OK_OPTION) {
+            int tarifId = (cmbTarif.getItemCount() > 0 && listTarif.size() > 0)
+                    ? tarifIds[cmbTarif.getSelectedIndex()] : 1;
+
+            String pesan = lapakController.tambahLapak(
+                    tarifId,
+                    txtNama.getText().trim(),
+                    (String) cmbJenis.getSelectedItem(),
+                    txtDeskripsi.getText().trim(),
+                    (Integer) spnKapasitas.getValue(),
+                    0, 0
+            );
+
+            JOptionPane.showMessageDialog(this, pesan,
+                    pesan.startsWith("Error") ? "Error" : "Berhasil",
+                    pesan.startsWith("Error")
+                            ? JOptionPane.ERROR_MESSAGE
+                            : JOptionPane.INFORMATION_MESSAGE);
+
+            if (!pesan.startsWith("Error")) refresh();
+        }
+    }
+    
+    // Hapus lapak
+    private void hapusLapak(Lapak lapak) {
+        if (lapak.getStatus().equals("TERISI")) {
+            JOptionPane.showMessageDialog(this,
+                    "Tidak bisa menghapus lapak yang sedang terisi!",
+                    "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        int konfirmasi = JOptionPane.showConfirmDialog(this,
+                "Hapus lapak " + lapak.getNamaLapak() + " permanen?\n"
+                        + "Semua riwayat transaksi lapak ini ikut terhapus!\n"
+                        + "Data tidak bisa dikembalikan!",
+                "Konfirmasi Hapus",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.WARNING_MESSAGE);
+
+        if (konfirmasi == JOptionPane.YES_OPTION) {
+            // Hapus semua transaksi lapak ini dulu
+            new dao.TransaksiDao().deleteByLapakId(lapak.getId());
+            // Baru hapus lapaknya
+            new dao.LapakDao().delete(lapak.getId());
+
+            JOptionPane.showMessageDialog(this,
+                    "Lapak " + lapak.getNamaLapak() + " berhasil dihapus.",
+                    "Berhasil", JOptionPane.INFORMATION_MESSAGE);
             refresh();
         }
     }
