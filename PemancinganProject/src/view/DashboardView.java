@@ -193,7 +193,8 @@ public class DashboardView extends JFrame {
         RiwayatTransaksiPanel riwayatPanel = new RiwayatTransaksiPanel();
         contentPanel.add(riwayatPanel, "TRANSAKSI");
 
-        contentPanel.add(buatPlaceholder("Laporan & Statistik\n(Segera Hadir)"), "LAPORAN");
+        LaporanPanel laporanPanel =  new LaporanPanel();
+        contentPanel.add(laporanPanel, "LAPORAN");
 
         add(contentPanel, BorderLayout.CENTER);
     }
