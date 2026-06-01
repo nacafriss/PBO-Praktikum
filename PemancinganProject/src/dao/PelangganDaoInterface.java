@@ -21,4 +21,7 @@ public interface PelangganDaoInterface {
     
     List<Pelanggan> getAll();
     
+    Pelanggan getByNoHp(String noHp);
+    Pelanggan getById(int id); 
+    
 }

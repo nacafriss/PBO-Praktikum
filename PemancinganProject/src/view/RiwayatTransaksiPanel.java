@@ -129,7 +129,7 @@ public class RiwayatTransaksiPanel extends JPanel {
         // FOOTER
         // =====================================================
 
-        JButton btnRefresh = new JButton("↻ Refresh Data");
+        JButton btnRefresh = new JButton("Refresh Data");
 
         btnRefresh.setFont(new Font("Segoe UI", Font.BOLD, 13));
 

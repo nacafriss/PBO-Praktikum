@@ -93,6 +93,79 @@ public class PelangganDao implements PelangganDaoInterface {
             System.err.println("Delete Pelanggan Failed: " + e.getLocalizedMessage());
         }
     }
+    
+    // PelangganDao.java — tambahkan dua method baru ini
+
+    @Override
+    public Pelanggan getByNoHp(String noHp) {
+        // Query langsung ke DB dengan WHERE — hanya 1 baris yang diambil
+        String query = "SELECT * FROM pelanggan WHERE no_hp = ? LIMIT 1";
+
+        try (Connection conn = DBConnection.Connect();
+             PreparedStatement stmt = conn.prepareStatement(query)) {
+
+            stmt.setString(1, noHp);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return mapResultSet(rs); // Method mapResultSet sudah ada
+                }
+            }
+
+        } catch (SQLException e) {
+            System.err.println("getByNoHp Pelanggan gagal: " + e.getMessage());
+        }
+
+        return null;
+    }
+
+    @Override
+    public Pelanggan getById(int id) {
+        String query = "SELECT * FROM pelanggan WHERE id = ? LIMIT 1";
+
+        try (Connection conn = DBConnection.Connect();
+             PreparedStatement stmt = conn.prepareStatement(query)) {
+
+            stmt.setInt(1, id);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return mapResultSet(rs);
+                }
+            }
+
+        } catch (SQLException e) {
+            System.err.println("getById Pelanggan gagal: " + e.getMessage());
+        }
+
+        return null;
+    }
+
+    // Tambahkan juga private helper mapResultSet agar tidak duplikasi kode
+    // (saat ini di PelangganDao belum ada mapResultSet — kode mapping inline di getAll())
+    // Refactor getAll() sekalian:
+
+    private Pelanggan mapResultSet(ResultSet rs) throws SQLException {
+        Pelanggan p = new Pelanggan();
+        p.setId(rs.getInt("id"));
+        p.setNama(rs.getString("nama"));
+        p.setNoHp(rs.getString("no_hp"));
+        p.setEmail(rs.getString("email"));
+        p.setAlamat(rs.getString("alamat"));
+        p.setTipeMember(rs.getString("tipe_member"));
+        p.setPoin(rs.getInt("poin"));
+        p.setTotalKunjungan(rs.getInt("total_kunjungan"));
+        p.setTotalBelanja(rs.getBigDecimal("total_belanja"));
+        p.setAktif(rs.getBoolean("aktif"));
+
+        if (rs.getTimestamp("created_at") != null) {
+            p.setCreatedAt(rs.getTimestamp("created_at").toLocalDateTime());
+        }
+        if (rs.getTimestamp("updated_at") != null) {
+            p.setUpdatedAt(rs.getTimestamp("updated_at").toLocalDateTime());
+        }
+        return p;
+    }
 
     @Override
     public List<Pelanggan> getAll() {
@@ -104,26 +177,7 @@ public class PelangganDao implements PelangganDaoInterface {
              ResultSet rs = statement.executeQuery(query)) {
 
             while (rs.next()) {
-                Pelanggan p = new Pelanggan();
-                p.setId(rs.getInt("id"));
-                p.setNama(rs.getString("nama"));
-                p.setNoHp(rs.getString("no_hp"));
-                p.setEmail(rs.getString("email"));
-                p.setAlamat(rs.getString("alamat"));
-                p.setTipeMember(rs.getString("tipe_member"));
-                p.setPoin(rs.getInt("poin"));
-                p.setTotalKunjungan(rs.getInt("total_kunjungan"));
-                p.setTotalBelanja(rs.getBigDecimal("total_belanja"));
-                p.setAktif(rs.getBoolean("aktif"));
-
-                if (rs.getTimestamp("created_at") != null) {
-                    p.setCreatedAt(rs.getTimestamp("created_at").toLocalDateTime());
-                }
-                if (rs.getTimestamp("updated_at") != null) {
-                    p.setUpdatedAt(rs.getTimestamp("updated_at").toLocalDateTime());
-                }
-
-                listPelanggan.add(p);
+                listPelanggan.add(mapResultSet(rs)); // Pakai helper, tidak duplikasi
             }
 
         } catch (SQLException e) {

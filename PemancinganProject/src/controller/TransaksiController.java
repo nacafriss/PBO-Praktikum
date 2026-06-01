@@ -24,20 +24,21 @@ import model.Tarif;
 import model.Transaksi;
 import utils.FormatterUtil;
 import utils.ValidatorUtil;
+import utils.StrukBuilder;
 
 public class TransaksiController {
 
     private TransaksiDao transaksiDao;
     private LapakDao lapakDao;
     private TarifDao tarifDao;
-    private PelangganDao pelangganDao;
+    private PelangganController pelangganController;
     private DetailTangkapanDao detailTangkapanDao;
 
     public TransaksiController() {
         this.transaksiDao = new TransaksiDao();
         this.lapakDao = new LapakDao();
         this.tarifDao = new TarifDao();
-        this.pelangganDao = new PelangganDao();
+        this.pelangganController = new PelangganController();
         this.detailTangkapanDao = new DetailTangkapanDao();
     }
 
@@ -123,7 +124,8 @@ public class TransaksiController {
         }
 
         // --- Hitung Diskon Member/VIP ---
-        BigDecimal diskon = hitungDiskon(transaksi, tarif, totalBiaya);
+        BigDecimal diskon = pelangganController.hitungDiskon( transaksi.getPelangganId(), totalBiaya, tarif);
+
         totalBiaya = totalBiaya.subtract(diskon);
         if (totalBiaya.compareTo(BigDecimal.ZERO) < 0) {
             totalBiaya = BigDecimal.ZERO;
@@ -156,7 +158,7 @@ public class TransaksiController {
 
             // --- Update Total Belanja Pelanggan ---
             if (transaksi.getPelangganId() != null) {
-                updateTotalBelanjaPelanggan(transaksi.getPelangganId(), totalBiaya);
+                pelangganController.tambahTotalBelanja( transaksi.getPelangganId(), totalBiaya);
             }
 
             // --- Sinkron Status Lapak ---
@@ -170,169 +172,164 @@ public class TransaksiController {
         // =========================================================
 
         // --- Return Struk ---
-        return buildStruk(transaksi, lapak, listTangkapan,
-                biayaSewa, subtotalIkan, diskon, totalBiaya);
+        return StrukBuilder.buildStrukCheckout(transaksi, lapak, listTangkapan,
+        biayaSewa, subtotalIkan, diskon, totalBiaya);
     }
 
-    // =========================================================
-    // CHECKOUT LAMA (backward compatible)
-    // Dipakai CheckoutDialog versi lama jika masih ada
-    // =========================================================
+//    // =========================================================
+//    // CHECKOUT LAMA (backward compatible)
+//    // Dipakai CheckoutDialog versi lama jika masih ada
+//    // =========================================================
+//
+//    /**
+//     * Overload lama — tanpa list tangkapan, pakai berat tunggal.
+//     * Tetap dipertahankan agar tidak breaking change.
+//     */
+//    public String prosesCheckout(Transaksi transaksi, Lapak lapak,
+//                                  String inputDurasi, String inputBeratIkan, 
+//                                  boolean isSimpanKeDB) { 
+//        // Validasi
+//        if (!ValidatorUtil.isNumeric(inputDurasi)) {
+//            return "Error: Durasi harus berupa angka bulat!";
+//        }
+//        if (!ValidatorUtil.isDecimal(inputBeratIkan)) {
+//            return "Error: Berat ikan harus berupa angka!";
+//        }
+//
+//        // Untuk KILOAN buat satu DetailTangkapan generik
+//        List<DetailTangkapan> listTangkapan = null;
+//        if (lapak.getJenisKolam().equals("KILOAN")) {
+//            BigDecimal berat = new BigDecimal(inputBeratIkan);
+//            if (berat.compareTo(BigDecimal.ZERO) > 0) {
+//                Tarif tarif = tarifDao.getById(lapak.getTarifId());
+//                if (tarif == null) tarif = tarifDao.getByJenisKolam("KILOAN");
+//
+//                DetailTangkapan detail = new DetailTangkapan();
+//                detail.setNamaIkan("Ikan");
+//                detail.setBeratKg(berat);
+//                detail.setHargaPerKg(tarif != null && tarif.getBiayaMasukKiloan() != null
+//                        ? tarif.getBiayaMasukKiloan() : new BigDecimal("45000"));
+//                detail.setCatatan("");
+//
+//                listTangkapan = new java.util.ArrayList<>();
+//                listTangkapan.add(detail);
+//            }
+//        }
+//
+//        return prosesCheckout(transaksi, lapak, inputDurasi, listTangkapan, isSimpanKeDB); 
+//    }
+//
+//    // =========================================================
+//    // QUERY
+//    // =========================================================
+//
+//    /**
+//     * Ambil semua transaksi aktif dari semua lapak.
+//     */
+//    public List<Transaksi> getSemuaTransaksiAktif() {
+//        return transaksiDao.getAllAktif();
+//    }
+//
+//    /**
+//     * Ambil detail tangkapan berdasarkan transaksi ID.
+//     */
+//    public List<DetailTangkapan> getDetailTangkapan(int transaksiId) {
+//        return detailTangkapanDao.getByTransaksiId(transaksiId);
+//    }
+//
+//    // =========================================================
+//    // PRIVATE HELPER
+//    // =========================================================
+//
+//    /**
+//     * Hitung diskon berdasarkan tipe member pelanggan.
+//     */
+//    private BigDecimal hitungDiskon(Transaksi transaksi, Tarif tarif, BigDecimal totalBiaya) {
+//        if (transaksi.getPelangganId() == null) return BigDecimal.ZERO;
+//
+//         Pelanggan pelanggan = pelangganDao.getById(transaksi.getPelangganId());
+//
+//        if (pelanggan == null) return BigDecimal.ZERO;
+//
+//        BigDecimal persenDiskon = BigDecimal.ZERO;
+//
+//        switch (pelanggan.getTipeMember()) {
+//            case "MEMBER":
+//                persenDiskon = tarif.getDiskonMember() != null
+//                        ? tarif.getDiskonMember() : BigDecimal.ZERO;
+//                break;
+//            case "VIP":
+//                persenDiskon = tarif.getDiskonVip() != null
+//                        ? tarif.getDiskonVip() : BigDecimal.ZERO;
+//                break;
+//            default:
+//                return BigDecimal.ZERO;
+//        }
+//
+//        // Diskon dalam persen, misal 10.00 = 10%
+//        return totalBiaya.multiply(persenDiskon)
+//                .divide(new BigDecimal("100"), 0, RoundingMode.HALF_UP);
+//    }
+//
+//    /**
+//     * Update total belanja pelanggan setelah checkout.
+//     */
+//    private void updateTotalBelanjaPelanggan(int pelangganId, BigDecimal tambahan) {
+//        Pelanggan pelanggan = pelangganDao.getById(pelangganId); // Query langsung
+//        if (pelanggan == null) return;
+//
+//        BigDecimal totalLama = pelanggan.getTotalBelanja() != null
+//                ? pelanggan.getTotalBelanja() : BigDecimal.ZERO;
+//        pelanggan.setTotalBelanja(totalLama.add(tambahan));
+//        pelangganDao.update(pelanggan);
+//    }
 
-    /**
-     * Overload lama — tanpa list tangkapan, pakai berat tunggal.
-     * Tetap dipertahankan agar tidak breaking change.
-     */
-    public String prosesCheckout(Transaksi transaksi, Lapak lapak,
-                                  String inputDurasi, String inputBeratIkan, 
-                                  boolean isSimpanKeDB) { 
-        // Validasi
-        if (!ValidatorUtil.isNumeric(inputDurasi)) {
-            return "Error: Durasi harus berupa angka bulat!";
-        }
-        if (!ValidatorUtil.isDecimal(inputBeratIkan)) {
-            return "Error: Berat ikan harus berupa angka!";
-        }
-
-        // Untuk KILOAN buat satu DetailTangkapan generik
-        List<DetailTangkapan> listTangkapan = null;
-        if (lapak.getJenisKolam().equals("KILOAN")) {
-            BigDecimal berat = new BigDecimal(inputBeratIkan);
-            if (berat.compareTo(BigDecimal.ZERO) > 0) {
-                Tarif tarif = tarifDao.getById(lapak.getTarifId());
-                if (tarif == null) tarif = tarifDao.getByJenisKolam("KILOAN");
-
-                DetailTangkapan detail = new DetailTangkapan();
-                detail.setNamaIkan("Ikan");
-                detail.setBeratKg(berat);
-                detail.setHargaPerKg(tarif != null && tarif.getBiayaMasukKiloan() != null
-                        ? tarif.getBiayaMasukKiloan() : new BigDecimal("45000"));
-                detail.setCatatan("");
-
-                listTangkapan = new java.util.ArrayList<>();
-                listTangkapan.add(detail);
-            }
-        }
-
-        return prosesCheckout(transaksi, lapak, inputDurasi, listTangkapan, isSimpanKeDB); 
-    }
-
-    // =========================================================
-    // QUERY
-    // =========================================================
-
-    /**
-     * Ambil semua transaksi aktif dari semua lapak.
-     */
-    public List<Transaksi> getSemuaTransaksiAktif() {
-        return transaksiDao.getAllAktif();
-    }
-
-    /**
-     * Ambil detail tangkapan berdasarkan transaksi ID.
-     */
-    public List<DetailTangkapan> getDetailTangkapan(int transaksiId) {
-        return detailTangkapanDao.getByTransaksiId(transaksiId);
-    }
-
-    // =========================================================
-    // PRIVATE HELPER
-    // =========================================================
-
-    /**
-     * Hitung diskon berdasarkan tipe member pelanggan.
-     */
-    private BigDecimal hitungDiskon(Transaksi transaksi, Tarif tarif, BigDecimal totalBiaya) {
-        if (transaksi.getPelangganId() == null) return BigDecimal.ZERO;
-
-        Pelanggan pelanggan = pelangganDao.getAll().stream()
-                .filter(p -> p.getId() == transaksi.getPelangganId())
-                .findFirst().orElse(null);
-
-        if (pelanggan == null) return BigDecimal.ZERO;
-
-        BigDecimal persenDiskon = BigDecimal.ZERO;
-
-        switch (pelanggan.getTipeMember()) {
-            case "MEMBER":
-                persenDiskon = tarif.getDiskonMember() != null
-                        ? tarif.getDiskonMember() : BigDecimal.ZERO;
-                break;
-            case "VIP":
-                persenDiskon = tarif.getDiskonVip() != null
-                        ? tarif.getDiskonVip() : BigDecimal.ZERO;
-                break;
-            default:
-                return BigDecimal.ZERO;
-        }
-
-        // Diskon dalam persen, misal 10.00 = 10%
-        return totalBiaya.multiply(persenDiskon)
-                .divide(new BigDecimal("100"), 0, RoundingMode.HALF_UP);
-    }
-
-    /**
-     * Update total belanja pelanggan setelah checkout.
-     */
-    private void updateTotalBelanjaPelanggan(int pelangganId, BigDecimal tambahan) {
-        List<Pelanggan> list = pelangganDao.getAll();
-        for (Pelanggan p : list) {
-            if (p.getId() == pelangganId) {
-                BigDecimal totalLama = p.getTotalBelanja() != null
-                        ? p.getTotalBelanja() : BigDecimal.ZERO;
-                p.setTotalBelanja(totalLama.add(tambahan));
-                pelangganDao.update(p);
-                break;
-            }
-        }
-    }
-
-    /**
-     * Build struk checkout yang tampil di dialog.
-     */
-    private String buildStruk(Transaksi transaksi, Lapak lapak,
-                               List<DetailTangkapan> listTangkapan,
-                               BigDecimal biayaSewa, BigDecimal subtotalIkan,
-                               BigDecimal diskon, BigDecimal totalBiaya) {
-
-        StringBuilder sb = new StringBuilder();
-        sb.append("===== STRUK CHECKOUT =====\n");
-        sb.append("Lapak    : ").append(lapak.getNamaLapak()).append("\n");
-        sb.append("Pelanggan: ").append(transaksi.getNamaPelanggan()).append("\n");
-        sb.append("Posisi   : ").append(transaksi.getPosisi()).append("\n");
-        sb.append("Check-in : ").append(
-                FormatterUtil.formatTanggalWaktu(transaksi.getWaktuCheckin())).append("\n");
-        sb.append("Check-out: ").append(
-                FormatterUtil.formatTanggalWaktu(transaksi.getWaktuCheckout())).append("\n");
-        sb.append("--------------------------\n");
-
-        // Detail tangkapan untuk KILOAN
-        if (listTangkapan != null && !listTangkapan.isEmpty()) {
-            sb.append("Detail Tangkapan:\n");
-            for (DetailTangkapan d : listTangkapan) {
-                sb.append("  ").append(d.getNamaIkan())
-                        .append(" ").append(d.getBeratKg()).append(" kg")
-                        .append(" x ").append(FormatterUtil.formatRupiah(d.getHargaPerKg()))
-                        .append(" = ").append(FormatterUtil.formatRupiah(d.getSubtotal()))
-                        .append("\n");
-            }
-            sb.append("--------------------------\n");
-        }
-
-        if (biayaSewa.compareTo(BigDecimal.ZERO) > 0) {
-            sb.append("Biaya Sewa  : ").append(FormatterUtil.formatRupiah(biayaSewa)).append("\n");
-        }
-        if (subtotalIkan.compareTo(BigDecimal.ZERO) > 0) {
-            sb.append("Subtotal Ikan: ").append(FormatterUtil.formatRupiah(subtotalIkan)).append("\n");
-        }
-        if (diskon.compareTo(BigDecimal.ZERO) > 0) {
-            sb.append("Diskon      : -").append(FormatterUtil.formatRupiah(diskon)).append("\n");
-        }
-
-        sb.append("==========================\n");
-        sb.append("TOTAL : ").append(FormatterUtil.formatRupiah(totalBiaya)).append("\n");
-        sb.append("==========================");
-
-        return sb.toString();
-    }
+//    /**
+//     * Build struk checkout yang tampil di dialog.
+//     */
+//    private String buildStruk(Transaksi transaksi, Lapak lapak,
+//                               List<DetailTangkapan> listTangkapan,
+//                               BigDecimal biayaSewa, BigDecimal subtotalIkan,
+//                               BigDecimal diskon, BigDecimal totalBiaya) {
+//
+//        StringBuilder sb = new StringBuilder();
+//        sb.append("===== STRUK CHECKOUT =====\n");
+//        sb.append("Lapak    : ").append(lapak.getNamaLapak()).append("\n");
+//        sb.append("Pelanggan: ").append(transaksi.getNamaPelanggan()).append("\n");
+//        sb.append("Posisi   : ").append(transaksi.getPosisi()).append("\n");
+//        sb.append("Check-in : ").append(
+//                FormatterUtil.formatTanggalWaktu(transaksi.getWaktuCheckin())).append("\n");
+//        sb.append("Check-out: ").append(
+//                FormatterUtil.formatTanggalWaktu(transaksi.getWaktuCheckout())).append("\n");
+//        sb.append("--------------------------\n");
+//
+//        // Detail tangkapan untuk KILOAN
+//        if (listTangkapan != null && !listTangkapan.isEmpty()) {
+//            sb.append("Detail Tangkapan:\n");
+//            for (DetailTangkapan d : listTangkapan) {
+//                sb.append("  ").append(d.getNamaIkan())
+//                        .append(" ").append(d.getBeratKg()).append(" kg")
+//                        .append(" x ").append(FormatterUtil.formatRupiah(d.getHargaPerKg()))
+//                        .append(" = ").append(FormatterUtil.formatRupiah(d.getSubtotal()))
+//                        .append("\n");
+//            }
+//            sb.append("--------------------------\n");
+//        }
+//
+//        if (biayaSewa.compareTo(BigDecimal.ZERO) > 0) {
+//            sb.append("Biaya Sewa  : ").append(FormatterUtil.formatRupiah(biayaSewa)).append("\n");
+//        }
+//        if (subtotalIkan.compareTo(BigDecimal.ZERO) > 0) {
+//            sb.append("Subtotal Ikan: ").append(FormatterUtil.formatRupiah(subtotalIkan)).append("\n");
+//        }
+//        if (diskon.compareTo(BigDecimal.ZERO) > 0) {
+//            sb.append("Diskon      : -").append(FormatterUtil.formatRupiah(diskon)).append("\n");
+//        }
+//
+//        sb.append("==========================\n");
+//        sb.append("TOTAL : ").append(FormatterUtil.formatRupiah(totalBiaya)).append("\n");
+//        sb.append("==========================");
+//
+//        return sb.toString();
+//    }
 }

@@ -21,13 +21,13 @@ public class LapakController {
 
     private LapakDao lapakDao;
     private TransaksiDao transaksiDao;
-    private PelangganDao pelangganDao;
+    private PelangganController pelangganController;
     private TarifDao tarifDao;
 
     public LapakController() {
         this.lapakDao = new LapakDao();
         this.transaksiDao = new TransaksiDao();
-        this.pelangganDao = new PelangganDao();
+        this.pelangganController  = new PelangganController();
         this.tarifDao = new TarifDao();
     }
 
@@ -135,33 +135,7 @@ public class LapakController {
         int durasiPesan = Integer.parseInt(inputDurasi);
 
         // --- Simpan/Update Data Pelanggan ---
-        Integer pelangganId = null;
-        if (ValidatorUtil.isNotNullOrEmpty(noHp)) {
-            Pelanggan pelanggan = cariPelangganByNoHp(noHp);
-            if (pelanggan != null) {
-                // Pelanggan sudah ada — JANGAN update nama
-                // Hanya update total kunjungan
-                pelanggan.setTotalKunjungan(pelanggan.getTotalKunjungan() + 1);
-                pelangganDao.update(pelanggan);
-                pelangganId = pelanggan.getId();
-            } else {
-                // Pelanggan baru — daftarkan
-                Pelanggan pelangganBaru = new Pelanggan();
-                pelangganBaru.setNama(namaPelanggan.trim());
-                pelangganBaru.setNoHp(noHp.trim());
-                pelangganBaru.setEmail("");
-                pelangganBaru.setAlamat("");
-                pelangganBaru.setTipeMember("UMUM");
-                pelangganBaru.setPoin(0);
-                pelangganBaru.setTotalKunjungan(1);
-                pelangganBaru.setTotalBelanja(java.math.BigDecimal.ZERO);
-                pelangganBaru.setAktif(true);
-                pelangganDao.insert(pelangganBaru);
-
-                Pelanggan tersimpan = cariPelangganByNoHp(noHp.trim());
-                if (tersimpan != null) pelangganId = tersimpan.getId();
-            }
-        }
+        Integer pelangganId = pelangganController.prosesCheckinPelanggan(namaPelanggan, noHp);
 
         // --- Ambil Tarif dari DB ---
         Tarif tarif = tarifDao.getById(lapak.getTarifId());
@@ -264,12 +238,6 @@ public class LapakController {
      * Cari pelanggan berdasarkan nomor HP.
      */
     public Pelanggan cariPelangganByNoHp(String noHp) {
-        List<Pelanggan> semuaPelanggan = pelangganDao.getAll();
-        for (Pelanggan p : semuaPelanggan) {
-            if (p.getNoHp() != null && p.getNoHp().equals(noHp)) {
-                return p;
-            }
-        }
-        return null;
+        return pelangganController.cariByNoHp(noHp); // Delegasi langsung ke DAO
     }
 }
