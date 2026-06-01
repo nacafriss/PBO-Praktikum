@@ -53,7 +53,7 @@ public class LapakDao implements LapakDaoInterface {
                        "tarif_id=?, nama_lapak=?, jenis_kolam=?, deskripsi=?, status=?, " +
                        "kapasitas=?, aktif=?, posisi_x=?, posisi_y=? WHERE id=?";
 
-        // DIPERBAIKI: Menggunakan Try-With-Resources
+
         try (Connection conn = DBConnection.Connect();
              PreparedStatement statement = conn.prepareStatement(query)) {
 
@@ -79,7 +79,7 @@ public class LapakDao implements LapakDaoInterface {
     public void delete(int id) {
         String query = "DELETE FROM lapak WHERE id=?";
 
-        // DIPERBAIKI: Menggunakan Try-With-Resources
+
         try (Connection conn = DBConnection.Connect();
              PreparedStatement statement = conn.prepareStatement(query)) {
 
@@ -96,7 +96,7 @@ public class LapakDao implements LapakDaoInterface {
         List<Lapak> listLapak = new ArrayList<>();
         String query = "SELECT * FROM lapak";
 
-        // DIPERBAIKI: Membungkus Connection, Statement, dan ResultSet dalam Try-With-Resources
+
         try (Connection conn = DBConnection.Connect();
              Statement statement = conn.createStatement();
              ResultSet resultSet = statement.executeQuery(query)) {

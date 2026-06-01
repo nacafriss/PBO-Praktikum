@@ -12,7 +12,7 @@ import java.util.Locale;
 
 public class FormatterUtil {
 
-    // Locale Indonesia menggunakan cara baru (Java 19+)
+    // Locale Indonesia 
     private static final Locale LOCALE_ID = Locale.of("id", "ID");
 
     public static String formatRupiah(BigDecimal nominal) {

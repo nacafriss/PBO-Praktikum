@@ -60,8 +60,7 @@ public class TransaksiController {
     public String prosesCheckout(Transaksi transaksi, Lapak lapak,
                                   String inputDurasi,
                                   List<DetailTangkapan> listTangkapan,
-                                  boolean isSimpanKeDB) { // <-- Tambahan parameter di sini
-
+                                  boolean isSimpanKeDB) { 
         // --- Validasi Input ---
         if (!ValidatorUtil.isNumeric(inputDurasi)) {
             return "Error: Durasi harus berupa angka bulat!";
@@ -176,10 +175,6 @@ public class TransaksiController {
         biayaSewa, subtotalIkan, diskon, totalBiaya);
     }
 
-//    // =========================================================
-//    // CHECKOUT LAMA (backward compatible)
-//    // Dipakai CheckoutDialog versi lama jika masih ada
-//    // =========================================================
 //
 //    /**
 //     * Overload lama — tanpa list tangkapan, pakai berat tunggal.
